@@ -1,2 +1,2 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+[Теория](https://lk.samgtu.ru/files/storedfiles?id=JkwK93tA1J72ncjw-r0A4xpDXD5dSdJn)
+[Практика](https://lk.samgtu.ru/files/storedfiles?id=V2OiaJQzQEAIjZsyCq2CP35gTVrztJpX) (На питоне, правда...)
