@@ -1,14 +1,20 @@
-import 'dart:isolate';
+import 'dart:mirrors';
 
-import 'agent.dart';
-import 'agent_wrapper.dart';
+import 'base.dart';
 
-typedef CalculatorSettings = ({dynamic initialValue});
+class C8rSettings extends BaseSettings {
+  @override
+  ClassMirror get owner => reflectClass(C8rAgent);
 
-class Calculator extends Agent {
+  final dynamic initialValue;
+
+  C8rSettings({this.initialValue = 0});
+}
+
+class C8rAgent extends BaseAgent {
   dynamic accumulator = 0;
 
-  Calculator(dynamic settings) {
+  C8rAgent(C8rSettings settings) {
     accumulator = settings.initialValue;
   }
 
@@ -18,9 +24,5 @@ class Calculator extends Agent {
       accumulator = message.operation(accumulator, message.value);
       print(accumulator);
     }
-  }
-
-  static Future<SendPort> spawn(CalculatorSettings settings) async {
-    return await spawnAgent(Calculator.new, settings);
   }
 }

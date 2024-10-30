@@ -1,14 +1,23 @@
 import 'dart:isolate';
+import 'dart:mirrors';
 
-import 'agent.dart';
-import 'agent_wrapper.dart';
+import 'base.dart';
 
-typedef NumberSettings = ({dynamic value, dynamic Function(dynamic a, dynamic b) operation, SendPort calculatorPort});
+class NumberSettings extends BaseSettings {
+  @override
+  ClassMirror get owner => reflectClass(NumberAgent);
 
-class Number extends Agent {
+  final dynamic value;
+  final dynamic Function(dynamic a, dynamic b) operation;
+  final SendPort calculatorPort;
+
+  NumberSettings({required this.value, required this.operation, required this.calculatorPort});
+}
+
+class NumberAgent extends BaseAgent {
   late final NumberSettings settings;
 
-  Number(dynamic settings) {
+  NumberAgent(dynamic settings) {
     if (settings is! NumberSettings) {
       throw TypeError();
     } else {
@@ -26,9 +35,5 @@ class Number extends Agent {
         ));
       }
     }
-  }
-
-  static Future<SendPort> spawn(NumberSettings settings) async {
-    return await spawnAgent(Number.new, settings);
   }
 }
