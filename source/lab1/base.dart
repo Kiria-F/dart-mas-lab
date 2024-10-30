@@ -3,7 +3,7 @@ import 'dart:mirrors';
 
 import 'agent_wrapper.dart';
 
-abstract class BaseSettings {
+abstract class Settings {
   ClassMirror get owner;
 
   Future<SendPort> spawn() async {
@@ -11,6 +11,6 @@ abstract class BaseSettings {
   }
 }
 
-abstract class BaseAgent {
+abstract class Agent {
   void listener(dynamic message);
 }

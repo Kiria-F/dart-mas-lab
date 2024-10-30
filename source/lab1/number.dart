@@ -3,7 +3,7 @@ import 'dart:mirrors';
 
 import 'base.dart';
 
-class NumberSettings extends BaseSettings {
+class NumberSettings extends Settings {
   @override
   ClassMirror get owner => reflectClass(NumberAgent);
 
@@ -14,7 +14,7 @@ class NumberSettings extends BaseSettings {
   NumberSettings({required this.value, required this.operation, required this.calculatorPort});
 }
 
-class NumberAgent extends BaseAgent {
+class NumberAgent extends Agent {
   late final NumberSettings settings;
 
   NumberAgent(dynamic settings) {

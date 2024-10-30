@@ -2,7 +2,7 @@ import 'dart:mirrors';
 
 import 'base.dart';
 
-class C8rSettings extends BaseSettings {
+class C8rSettings extends Settings {
   @override
   ClassMirror get owner => reflectClass(C8rAgent);
 
@@ -11,7 +11,7 @@ class C8rSettings extends BaseSettings {
   C8rSettings({this.initialValue = 0});
 }
 
-class C8rAgent extends BaseAgent {
+class C8rAgent extends Agent {
   dynamic accumulator = 0;
 
   C8rAgent(C8rSettings settings) {

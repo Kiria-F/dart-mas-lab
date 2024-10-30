@@ -4,13 +4,13 @@ import 'base.dart';
 
 typedef _Setup = ({
   SendPort initSendPort,
-  BaseAgent Function(BaseSettings settings) spawner,
+  Agent Function(Settings settings) spawner,
   dynamic settings,
 });
 
 class _AgentWrapper {
   ReceivePort receivePort = ReceivePort();
-  late BaseAgent agent;
+  late Agent agent;
 
   _AgentWrapper(_Setup setup) {
     agent = setup.spawner(setup.settings);
@@ -24,7 +24,7 @@ class _AgentWrapper {
 }
 
 Future<SendPort> spawnAgent(
-  BaseSettings settings,
+  Settings settings,
 ) async {
   var initReceivePort = ReceivePort();
 
@@ -32,7 +32,7 @@ Future<SendPort> spawnAgent(
     _AgentWrapper.new,
     (
       initSendPort: initReceivePort.sendPort,
-      spawner: (s) => settings.owner.newInstance(Symbol(''), [s]).reflectee as BaseAgent,
+      spawner: (s) => settings.owner.newInstance(Symbol(''), [s]).reflectee as Agent,
       settings: settings,
     ),
   );
