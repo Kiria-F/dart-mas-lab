@@ -7,10 +7,7 @@ abstract class BaseSettings {
   ClassMirror get owner;
 
   Future<SendPort> spawn() async {
-    return await spawnAgent(
-      (settings) => owner.newInstance(Symbol(''), [settings]).reflectee,
-      this,
-    );
+    return await spawnAgent(this);
   }
 }
 
