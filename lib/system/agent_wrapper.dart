@@ -1,10 +1,10 @@
 import 'dart:isolate';
-
-import 'base.dart';
+import 'base_agent.dart';
+import 'base_settings.dart';
 
 typedef _Setup = ({
   SendPort initSendPort,
-  Agent Function(Settings settings) spawner,
+  Agent Function(BaseSettings settings) spawner,
   dynamic settings,
 });
 
@@ -24,7 +24,7 @@ class _AgentWrapper {
 }
 
 Future<SendPort> spawnAgent(
-  Settings settings,
+  BaseSettings settings,
 ) async {
   var initReceivePort = ReceivePort();
 
