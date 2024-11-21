@@ -1,10 +1,12 @@
 import 'dart:isolate';
 
 abstract class BaseAgent {
+  final SendPort root;
+  late String name;
   final ReceivePort _receivePort;
-  get sendPort => _receivePort.sendPort;
+  SendPort get me => _receivePort.sendPort;
 
-  BaseAgent({String debugName = ''}) : _receivePort = ReceivePort(debugName) {
+  BaseAgent({required this.root, required this.name}) : _receivePort = ReceivePort(name) {
     _receivePort.listen(listener);
   }
 
