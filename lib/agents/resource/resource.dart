@@ -1,8 +1,6 @@
-import 'dart:mirrors';
-
-import '/system/base_agent.dart';
-import '/system/base_settings.dart';
-import 'incoming.dart';
+import 'package:mas_labs/agents/task/task.dart';
+import 'package:mas_labs/base/base_agent.dart';
+import 'package:mas_labs/base/base_settings.dart';
 
 class ResourceSettings extends BaseSettings {
   final double performance;
@@ -10,10 +8,10 @@ class ResourceSettings extends BaseSettings {
   ResourceSettings({required this.performance});
 
   @override
-  ClassMirror get owner => reflectClass(ResourceAgent);
+  BaseAgent createAgent() => ResourceAgent(this);
 }
 
-class ResourceAgent extends Agent {
+final class ResourceAgent extends BaseAgent {
   late final double performance;
 
   ResourceAgent(ResourceSettings settings) {
@@ -22,6 +20,8 @@ class ResourceAgent extends Agent {
 
   @override
   void listener(dynamic message) {
-    if (message is TaskInfoMessage) {}
+    if (message is TaskInfo) {
+      print('Got task:\n- cost: ${message.cost}\n- ${message.seconds}');
+    }
   }
 }
