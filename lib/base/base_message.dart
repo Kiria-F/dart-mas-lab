@@ -1,7 +1,8 @@
 import 'dart:isolate';
 
 class BaseMessage {
-  final SendPort sender;
+  final SendPort senderPort;
+  final String senderName;
 
-  BaseMessage({required this.sender});
+  BaseMessage({required this.senderPort, required this.senderName});
 }

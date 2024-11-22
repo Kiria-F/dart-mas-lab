@@ -3,17 +3,16 @@ import 'package:mas_labs/base/base_message.dart';
 
 class RequestMessage extends BaseMessage {
   final TaskInfo info;
-  final String name;
 
-  RequestMessage({required this.info, required super.sender, required this.name});
+  RequestMessage({required this.info, required super.senderPort, required super.senderName});
 }
 
 class AcceptMessage extends BaseMessage {
-  AcceptMessage({required super.sender});
+  AcceptMessage({required super.senderPort, required super.senderName});
 }
 
 class RejectMessage extends BaseMessage {
-  RejectMessage({required super.sender});
+  RejectMessage({required super.senderPort, required super.senderName});
 }
 
 class KysMessage {}

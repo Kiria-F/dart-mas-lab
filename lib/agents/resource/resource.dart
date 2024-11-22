@@ -23,7 +23,7 @@ final class ResourceAgent extends BaseAgent {
   List<BacklogTask> backlog = [];
   List<PlannedTask> schedule = [];
 
-  ResourceAgent(ResourceSettings settings) : super(root: settings.root, name: settings.name) {
+  ResourceAgent(ResourceSettings settings) : super(rootPort: settings.root, name: settings.name) {
     performance = settings.performance;
   }
 
@@ -31,7 +31,7 @@ final class ResourceAgent extends BaseAgent {
   void listener(dynamic message) {
     sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is RequestMessage) {
-      print('[2] Resource [$name] got request for a new task [${message.name}]. Offer sent:');
+      print('Resource [ $name ] got request for a new task [ ${message.senderName} ]. Offer sent:');
       var bestValueIndex = 0;
       var bestValue = 0.0;
       late int bestValueDoneSeconds;
@@ -78,21 +78,21 @@ final class ResourceAgent extends BaseAgent {
             .toList(),
         insertion: (
           index: bestValueIndex,
-          name: message.name,
+          name: message.senderName,
           seconds: (message.info.amount / performance).ceil(),
         ),
       );
       backlog.add(BacklogTask(
-        owner: message.sender,
+        owner: message.senderPort,
+        name: message.senderName,
         scheduleIndex: bestValueIndex,
         info: message.info,
-        name: message.name,
       ));
-      message.sender.send(OfferMessage(sender: me, doneSeconds: bestValueDoneSeconds));
+      message.senderPort.send(OfferMessage(senderPort: port, senderName: name, doneSeconds: bestValueDoneSeconds));
     }
     if (message is AcceptMessage) {
-      var task = backlog.firstWhere((t) => t.owner == message.sender);
-      print('[4] Resource [$name] accepted task [${task.name}]. Accepted offer:');
+      var task = backlog.firstWhere((t) => t.owner == message.senderPort);
+      print('Resource [ $name ] accepted task [ ${task.name} ]. Accepted offer:');
       Tools.printSchedule(
         plan: schedule
             .map((t) => (
@@ -109,10 +109,10 @@ final class ResourceAgent extends BaseAgent {
       schedule.insert(task.scheduleIndex, PlannedTask(info: task.info, name: task.name));
     }
     if (message is RejectMessage) {
-      backlog.removeWhere((t) => t.owner == message.sender);
+      backlog.removeWhere((t) => t.owner == message.senderPort);
     }
     if (message is KysMessage) {
-      root.send(PlanDoneMessage(
+      rootPort.send(PlanDoneMessage(
           name: name,
           plan: schedule
               .map(

@@ -15,7 +15,7 @@ abstract class BaseSettings {
     var tempReceivePort = ReceivePort();
     Isolate.spawn(
       (AgentInitializationMessage message) {
-        message.sendPort.send(message.settings.createAgent().me);
+        message.sendPort.send(message.settings.createAgent().port);
       },
       (settings: this, sendPort: tempReceivePort.sendPort),
     );

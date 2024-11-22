@@ -23,31 +23,31 @@ class TaskAgent extends BaseAgent {
 
   TaskAgent(TaskSettings settings)
       : info = settings.info,
-        super(root: settings.root, name: settings.name);
+        super(rootPort: settings.root, name: settings.name);
 
   @override
   void listener(dynamic message) {
     sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is StartMessage) {
-      print('[1] Task [$name] started searching for the resource\n');
+      print('Task [ $name ] started searching for the resource\n');
       foundResources = message.resources.length;
       for (var resource in message.resources) {
-        resource.send(RequestMessage(info: info, sender: me, name: name));
+        resource.send(RequestMessage(info: info, senderPort: port, senderName: name));
       }
     }
     if (message is OfferMessage) {
-      print('[3] Task [$name] got offer from resource [${message.sender}]\n');
-      offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.sender));
+      print('Task [ $name ] got offer from resource [ ${message.senderName} ]\n');
+      offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.senderPort));
       if (offers.length == foundResources) {
         var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);
-        bestOffer.offerer.send(AcceptMessage(sender: me));
+        bestOffer.offerer.send(AcceptMessage(senderPort: port, senderName: name));
         for (var offer in offers) {
           if (offer != bestOffer) {
-            offer.offerer.send(RejectMessage(sender: me));
+            offer.offerer.send(RejectMessage(senderPort: port, senderName: name));
           }
         }
 
-        root.send(TaskDoneMessage());
+        rootPort.send(TaskDoneMessage());
         Isolate.current.kill();
       }
     }
