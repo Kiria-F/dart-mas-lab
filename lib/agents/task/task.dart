@@ -29,14 +29,14 @@ class TaskAgent extends BaseAgent {
   void listener(dynamic message) {
     sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is StartMessage) {
-      print('[1] Task [$name] started searching for the resource');
+      print('[1] Task [$name] started searching for the resource\n');
       foundResources = message.resources.length;
       for (var resource in message.resources) {
         resource.send(RequestMessage(info: info, sender: me, name: name));
       }
     }
     if (message is OfferMessage) {
-      print('[3] Task [$name] got offer from resource [${message.sender}]');
+      print('[3] Task [$name] got offer from resource [${message.sender}]\n');
       offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.sender));
       if (offers.length == foundResources) {
         var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);

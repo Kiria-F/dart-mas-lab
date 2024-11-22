@@ -31,7 +31,7 @@ final class ResourceAgent extends BaseAgent {
   void listener(dynamic message) {
     sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is RequestMessage) {
-      print('[2] Resource [$name] got request for a new task [${message.name}]');
+      print('[2] Resource [$name] got request for a new task [${message.name}]. Offer sent:');
       var bestValueIndex = 0;
       var bestValue = 0.0;
       late int bestValueDoneSeconds;
@@ -68,21 +68,20 @@ final class ResourceAgent extends BaseAgent {
           bestValueIndex = insertIndex;
           bestValueDoneSeconds = doneSeconds;
         }
-        Tools.printSchedule(
-          plan: schedule
-              .map((t) => (
-                    name: t.name,
-                    seconds: (t.info.amount / performance).ceil(),
-                  ))
-              .toList(),
-          insertion: (
-            index: bestValueIndex,
-            name: message.name,
-            seconds: (message.info.amount / performance).ceil(),
-          ),
-        );
       }
-
+      Tools.printSchedule(
+        plan: schedule
+            .map((t) => (
+                  name: t.name,
+                  seconds: (t.info.amount / performance).ceil(),
+                ))
+            .toList(),
+        insertion: (
+          index: bestValueIndex,
+          name: message.name,
+          seconds: (message.info.amount / performance).ceil(),
+        ),
+      );
       backlog.add(BacklogTask(
         owner: message.sender,
         scheduleIndex: bestValueIndex,
@@ -93,8 +92,21 @@ final class ResourceAgent extends BaseAgent {
     }
     if (message is AcceptMessage) {
       var task = backlog.firstWhere((t) => t.owner == message.sender);
-      print('[4] Resource [$name] accepted task [${task.name}]');
-      schedule.add(PlannedTask(info: task.info, name: task.name));
+      print('[4] Resource [$name] accepted task [${task.name}]. Accepted offer:');
+      Tools.printSchedule(
+        plan: schedule
+            .map((t) => (
+                  name: t.name,
+                  seconds: (t.info.amount / performance).ceil(),
+                ))
+            .toList(),
+        insertion: (
+          index: task.scheduleIndex,
+          name: task.name,
+          seconds: (task.info.amount / performance).ceil(),
+        ),
+      );
+      schedule.insert(task.scheduleIndex, PlannedTask(info: task.info, name: task.name));
     }
     if (message is RejectMessage) {
       backlog.removeWhere((t) => t.owner == message.sender);

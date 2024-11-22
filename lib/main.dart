@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/incoming.dart';
@@ -10,9 +11,11 @@ void main() async {
   var receivePort = ReceivePort();
   var setup = Setup(receivePort.sendPort);
   var resources = await Future.wait([for (var settings in setup.resourceSetup) settings.spawn()]);
-  var tasks = await Future.wait([for (var settings in setup.taskSetup.reversed) settings.spawn()]);
+  setup.taskSetup.shuffle();
+  var tasks = await Future.wait([for (var settings in setup.taskSetup) settings.spawn()]);
   for (var task in tasks) {
     task.send(StartMessage(resources: resources, sender: receivePort.sendPort));
+    sleep(Duration(seconds: 1));
   }
   var tasksDone = 0;
   var plansDone = 0;
@@ -27,7 +30,7 @@ void main() async {
     }
     if (message is PlanDoneMessage) {
       plansDone++;
-      print('\nPlan for resource [${message.name}]:');
+      print('Plan for resource [${message.name}]:');
       Tools.printSchedule(plan: message.plan);
       if (plansDone == resources.length) {
         receivePort.close();

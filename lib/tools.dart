@@ -40,8 +40,10 @@ abstract final class Tools {
     planRender.write(' ]');
     var render = StringBuffer();
     render.writeln(planRender);
-    render.writeln(anchorRender);
-    render.writeln(insertionRender);
+    if (insertion != null) {
+      render.writeln(anchorRender);
+      render.writeln(insertionRender);
+    }
     print(render.toString());
   }
 }
