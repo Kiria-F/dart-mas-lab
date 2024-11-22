@@ -1,15 +1,13 @@
 name: mas_labs
 description: A sample command-line application.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/Kiria-F/dart-mas-lab
 
 environment:
   sdk: ^3.5.3
 
-# Add regular dependencies here.
 dependencies:
   grpc: ^4.0.1
-  # path: ^1.8.0
 
 dev_dependencies:
   lints: ^4.0.0
