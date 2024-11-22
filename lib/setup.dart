@@ -11,10 +11,10 @@ class Setup {
 
   List<ResourceSettings> get resourceSetup {
     return [
-      ResourceSettings(root: rootPort, name: 'W12', performance: 5),
-      ResourceSettings(root: rootPort, name: 'W10', performance: 4.5),
+      ResourceSettings(root: rootPort, name: 'W10', performance: 5),
+      ResourceSettings(root: rootPort, name: 'W9', performance: 4.5),
       ResourceSettings(root: rootPort, name: 'W8', performance: 4),
-      ResourceSettings(root: rootPort, name: 'W6', performance: 3.5),
+      ResourceSettings(root: rootPort, name: 'W7', performance: 3.5),
     ];
   }
 
