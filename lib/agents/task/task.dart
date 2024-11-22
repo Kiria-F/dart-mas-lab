@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/incoming.dart';
@@ -26,6 +27,7 @@ class TaskAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
+    sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is StartMessage) {
       print('[1] Task [$name] started searching for the resource');
       foundResources = message.resources.length;
@@ -39,6 +41,11 @@ class TaskAgent extends BaseAgent {
       if (offers.length == foundResources) {
         var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);
         bestOffer.offerer.send(AcceptMessage(sender: me));
+        for (var offer in offers) {
+          if (offer != bestOffer) {
+            offer.offerer.send(RejectMessage(sender: me));
+          }
+        }
 
         root.send(TaskDoneMessage());
         Isolate.current.kill();
@@ -49,10 +56,10 @@ class TaskAgent extends BaseAgent {
 
 class TaskInfo {
   final int amount;
-  final int cost;
+  final int price;
   final double rate;
 
-  TaskInfo({required this.amount, required this.cost, required this.rate});
+  TaskInfo({required this.amount, required this.price, required this.rate});
 }
 
 class Offer {

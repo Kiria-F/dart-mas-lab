@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/incoming.dart';
@@ -6,6 +7,7 @@ import 'package:mas_labs/agents/task/task.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/main.dart';
+import 'package:mas_labs/tools.dart';
 
 class ResourceSettings extends BaseSettings {
   final double performance;
@@ -27,24 +29,75 @@ final class ResourceAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
+    sleep(Duration(milliseconds: random.nextInt(500) + 250));
     if (message is RequestMessage) {
       print('[2] Resource [$name] got request for a new task [${message.name}]');
-      var doneTime = schedule.fold(0.0, (a, t) => a + t.info.amount / performance);
-      doneTime += message.info.amount / performance;
+      var bestValueIndex = 0;
+      var bestValue = 0.0;
+      late int bestValueDoneSeconds;
+      for (var insertIndex = 0; insertIndex < schedule.length + 1; insertIndex++) {
+        var value = 0.0;
+        var timer = 0;
+        for (var i = 0; i < insertIndex; i++) {
+          var task = schedule[i];
+          timer += (task.info.amount / performance).ceil();
+          value += Tools.calcResultPrice(
+            price: task.info.price,
+            rate: task.info.rate,
+            doneSeconds: timer,
+          );
+        }
+        timer += (message.info.amount / performance).ceil();
+        var doneSeconds = timer;
+        value += Tools.calcResultPrice(
+          price: message.info.price,
+          rate: message.info.rate,
+          doneSeconds: timer,
+        );
+        for (var i = insertIndex; i < schedule.length; i++) {
+          var task = schedule[i];
+          timer += (task.info.amount / performance).ceil();
+          value += Tools.calcResultPrice(
+            price: task.info.price,
+            rate: task.info.rate,
+            doneSeconds: timer,
+          );
+        }
+        if (value > bestValue) {
+          bestValue = value;
+          bestValueIndex = insertIndex;
+          bestValueDoneSeconds = doneSeconds;
+        }
+        Tools.printSchedule(
+          plan: schedule
+              .map((t) => (
+                    name: t.name,
+                    seconds: (t.info.amount / performance).ceil(),
+                  ))
+              .toList(),
+          insertion: (
+            index: bestValueIndex,
+            name: message.name,
+            seconds: (message.info.amount / performance).ceil(),
+          ),
+        );
+      }
 
       backlog.add(BacklogTask(
         owner: message.sender,
-        scheduleIndex: schedule.length,
+        scheduleIndex: bestValueIndex,
         info: message.info,
         name: message.name,
       ));
-
-      message.sender.send(OfferMessage(sender: me, doneSeconds: doneTime.ceil()));
+      message.sender.send(OfferMessage(sender: me, doneSeconds: bestValueDoneSeconds));
     }
     if (message is AcceptMessage) {
       var task = backlog.firstWhere((t) => t.owner == message.sender);
       print('[4] Resource [$name] accepted task [${task.name}]');
       schedule.add(PlannedTask(info: task.info, name: task.name));
+    }
+    if (message is RejectMessage) {
+      backlog.removeWhere((t) => t.owner == message.sender);
     }
     if (message is KysMessage) {
       root.send(PlanDoneMessage(

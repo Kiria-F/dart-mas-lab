@@ -12,4 +12,8 @@ class AcceptMessage extends BaseMessage {
   AcceptMessage({required super.sender});
 }
 
+class RejectMessage extends BaseMessage {
+  RejectMessage({required super.sender});
+}
+
 class KysMessage {}
