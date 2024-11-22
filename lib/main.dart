@@ -8,7 +8,7 @@ import 'setup.dart';
 void main() async {
   var receivePort = ReceivePort();
   var resources = await Future.wait([for (var settings in resourceSetup(receivePort.sendPort)) settings.spawn()]);
-  var tasks = await Future.wait([for (var settings in taskSetup(receivePort.sendPort)) settings.spawn()]);
+  var tasks = await Future.wait([for (var settings in taskSetup(receivePort.sendPort).reversed) settings.spawn()]);
   for (var task in tasks) {
     task.send(StartMessage(resources: resources, sender: receivePort.sendPort));
   }

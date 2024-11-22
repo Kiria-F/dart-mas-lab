@@ -48,10 +48,11 @@ class TaskAgent extends BaseAgent {
 }
 
 class TaskInfo {
-  final int cost;
   final int amount;
+  final int cost;
+  final double rate;
 
-  TaskInfo({required this.cost, required this.amount});
+  TaskInfo({required this.amount, required this.cost, required this.rate});
 }
 
 class Offer {
