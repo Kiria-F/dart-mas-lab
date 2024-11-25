@@ -9,7 +9,7 @@ abstract final class Tools {
     return resultPrice;
   }
 
-  static void printSchedule({
+  static String visualizeSchedule({
     required List<({String name, int seconds})> plan,
     ({String name, int seconds, int index})? insertion,
   }) {
@@ -44,6 +44,6 @@ abstract final class Tools {
       render.writeln(anchorRender);
       render.writeln(insertionRender);
     }
-    print(render.toString());
+    return render.toString();
   }
 }
