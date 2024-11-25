@@ -1,8 +1,7 @@
-import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/incoming.dart';
-import 'package:mas_labs/agents/task/incoming.dart';
+import 'package:mas_labs/agents/resource/messages.dart';
+import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/agents/task/task.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
@@ -20,8 +19,8 @@ class ResourceSettings extends BaseSettings {
 
 final class ResourceAgent extends BaseAgent {
   late final double performance;
-  List<BacklogTask> backlog = [];
-  List<PlannedTask> schedule = [];
+  Map<SendPort, BacklogTask> backlog = {};
+  List<TaskInfo> schedule = [];
 
   ResourceAgent(ResourceSettings settings) : super(rootPort: settings.root, name: settings.name) {
     performance = settings.performance;
@@ -29,51 +28,24 @@ final class ResourceAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
-    sleep(Duration(milliseconds: random.nextInt(500) + 250));
-    if (message is RequestMessage) {
-      print('Resource [ $name ] got request for a new task [ ${message.senderName} ]. Offer sent:');
+    if (message is RequestOfferMessage) {
+      var task = TaskInfo.fromTaskInfoMini(message.info, message.senderPort, message.senderName);
       var bestValueIndex = 0;
       var bestValue = 0.0;
-      late int bestValueDoneSeconds;
+      var bestSeconds = 0;
       for (var insertIndex = 0; insertIndex < schedule.length + 1; insertIndex++) {
-        var value = 0.0;
-        var timer = 0;
-        for (var i = 0; i < insertIndex; i++) {
-          var task = schedule[i];
-          timer += (task.info.amount / performance).ceil();
-          value += Tools.calcResultPrice(
-            price: task.info.price,
-            rate: task.info.rate,
-            doneSeconds: timer,
-          );
-        }
-        timer += (message.info.amount / performance).ceil();
-        var doneSeconds = timer;
-        value += Tools.calcResultPrice(
-          price: message.info.price,
-          rate: message.info.rate,
-          doneSeconds: timer,
-        );
-        for (var i = insertIndex; i < schedule.length; i++) {
-          var task = schedule[i];
-          timer += (task.info.amount / performance).ceil();
-          value += Tools.calcResultPrice(
-            price: task.info.price,
-            rate: task.info.rate,
-            doneSeconds: timer,
-          );
-        }
+        var render = renderSchedule((index: insertIndex, info: task));
+        var value = render.fold(0.0, (v, r) => v + r.value);
         if (value > bestValue) {
           bestValue = value;
-          bestValueIndex = insertIndex;
-          bestValueDoneSeconds = doneSeconds;
+          bestSeconds = render.take(insertIndex + 1).fold(0, (s, r) => s + r.seconds);
         }
       }
-      Tools.printSchedule(
+      var v = Tools.visualizeSchedule(
         plan: schedule
             .map((t) => (
                   name: t.name,
-                  seconds: (t.info.amount / performance).ceil(),
+                  seconds: (t.amount / performance).ceil(),
                 ))
             .toList(),
         insertion: (
@@ -82,60 +54,93 @@ final class ResourceAgent extends BaseAgent {
           seconds: (message.info.amount / performance).ceil(),
         ),
       );
-      backlog.add(BacklogTask(
-        owner: message.senderPort,
-        name: message.senderName,
-        scheduleIndex: bestValueIndex,
-        info: message.info,
-      ));
-      message.senderPort.send(OfferMessage(senderPort: port, senderName: name, doneSeconds: bestValueDoneSeconds));
+      print('Resource [ $name ] got request for a new task [ ${message.senderName} ]. Offer sent:\n$v');
+      backlog[message.senderPort] = BacklogTask.fromTaskInfo(task, bestValueIndex);
+      message.senderPort.send(OfferMessage(senderPort: port, senderName: name, doneSeconds: bestSeconds));
     }
-    if (message is AcceptMessage) {
-      var task = backlog.firstWhere((t) => t.owner == message.senderPort);
-      print('Resource [ $name ] accepted task [ ${task.name} ]. Accepted offer:');
-      Tools.printSchedule(
-        plan: schedule
-            .map((t) => (
-                  name: t.name,
-                  seconds: (t.info.amount / performance).ceil(),
-                ))
-            .toList(),
-        insertion: (
-          index: task.scheduleIndex,
-          name: task.name,
-          seconds: (task.info.amount / performance).ceil(),
-        ),
-      );
-      schedule.insert(task.scheduleIndex, PlannedTask(info: task.info, name: task.name));
+    if (message is AcceptOfferMessage) {
+      var backlogTask = backlog[message.senderPort];
+      if (backlogTask == null) {
+        message.senderPort.send(OfferIsOutdatedMessage(senderPort: port, senderName: name));
+      } else {
+        backlog.remove(backlogTask.info.port);
+        var v = Tools.visualizeSchedule(
+          plan: schedule
+              .map((t) => (
+                    name: t.name,
+                    seconds: (t.amount / performance).ceil(),
+                  ))
+              .toList(),
+        );
+        print('Resource [ $name ] accepted task [ ${backlogTask.info.name} ]. New schedule:\n$v');
+        schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
+        for (var i = backlogTask.scheduleIndex + 1; i < schedule.length; i++) {
+          schedule[i];
+        }
+      }
     }
-    if (message is RejectMessage) {
-      backlog.removeWhere((t) => t.owner == message.senderPort);
+    if (message is RejectOfferMessage) {
+      backlog.remove(message.senderPort);
     }
     if (message is KysMessage) {
       rootPort.send(PlanDoneMessage(
           name: name,
           plan: schedule
               .map(
-                (e) => (name: e.name, seconds: (e.info.amount / performance).ceil()),
+                (e) => (name: e.name, seconds: (e.amount / performance).ceil()),
               )
               .toList(growable: false)));
       Isolate.current.kill();
     }
   }
+
+  Iterable<RenderedTask> renderSchedule(({TaskInfo info, int index})? insertion) sync* {
+    var seconds = 0;
+    if (insertion == null) {
+      for (var task in schedule) {
+        seconds += (task.amount / performance).ceil();
+        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
+      }
+    } else {
+      for (var i = 0; i < insertion.index; i++) {
+        var task = schedule[i];
+        seconds += (task.amount / performance).ceil();
+        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
+      }
+      seconds += (insertion.info.amount / performance).ceil();
+      yield RenderedTask.fromTaskInfo(insertion.info, seconds, Tools.calcValue(insertion.info, seconds));
+      for (var i = insertion.index; i < schedule.length; i++) {
+        var task = schedule[i];
+        seconds += (task.amount / performance).ceil();
+        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
+      }
+    }
+  }
+}
+
+class TaskInfo extends TaskInfoMini {
+  final SendPort port;
+  final String name;
+
+  TaskInfo.fromTaskInfoMini(super.info, this.port, this.name) : super.fromAnother();
+
+  TaskInfo.fromAnother(TaskInfo super.info)
+      : port = info.port,
+        name = info.name,
+        super.fromAnother();
 }
 
 class BacklogTask {
-  final int scheduleIndex;
   final TaskInfo info;
-  final SendPort owner;
-  final String name;
+  final int scheduleIndex;
 
-  BacklogTask({required this.scheduleIndex, required this.info, required this.owner, required this.name});
+  BacklogTask.fromTaskInfo(this.info, this.scheduleIndex);
 }
 
-class PlannedTask {
+class RenderedTask {
   final TaskInfo info;
-  final String name;
+  final int seconds;
+  final double value;
 
-  PlannedTask({required this.info, required this.name});
+  RenderedTask.fromTaskInfo(this.info, this.seconds, this.value);
 }

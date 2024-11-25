@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/incoming.dart';
-import 'package:mas_labs/agents/task/incoming.dart';
+import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/tools.dart';
 
 import 'setup.dart';
@@ -15,8 +14,8 @@ void main() async {
   setup.taskSetup.shuffle();
   var tasks = await Future.wait([for (var settings in setup.taskSetup) settings.spawn()]);
   for (var task in tasks) {
-    task.send(StartMessage(resources: resources));
-    sleep(Duration(seconds: 1));
+    task.send(KickTaskMessage(resources: resources));
+    sleep(Duration(milliseconds: 10));
   }
   var tasksDone = 0;
   var plansDone = 0;
@@ -31,11 +30,11 @@ void main() async {
     }
     if (message is PlanDoneMessage) {
       plansDone++;
-      print('Plan for resource [ ${message.name} ]:');
-      Tools.printSchedule(plan: message.plan);
+      var v = Tools.visualizeSchedule(plan: message.plan);
       if (plansDone == resources.length) {
         receivePort.close();
       }
+      print('Plan for resource [ ${message.name} ]:\n$v');
     }
   });
 }
@@ -47,4 +46,10 @@ class PlanDoneMessage {
   final List<({String name, int seconds})> plan;
 
   PlanDoneMessage({required this.name, required this.plan});
+}
+
+class KickTaskMessage {
+  final List<SendPort> resources;
+
+  KickTaskMessage({required this.resources});
 }

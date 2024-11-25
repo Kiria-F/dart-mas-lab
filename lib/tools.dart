@@ -1,15 +1,17 @@
+import 'package:mas_labs/agents/task/task.dart';
+
 abstract final class Tools {
-  static double calcResultPrice({required int price, required double rate, required int doneSeconds}) {
-    assert(0 < rate && rate < 1);
-    var decreaser = 1 - rate;
-    var resultPrice = price.toDouble();
+  static double calcValue(TaskInfoMini task, int doneSeconds) {
+    assert(0 < task.rate && task.rate < 1);
+    var decreaser = 1 - task.rate;
+    var resultPrice = task.price.toDouble();
     for (var i = 0; i < doneSeconds; i++) {
       resultPrice *= decreaser;
     }
     return resultPrice;
   }
 
-  static void printSchedule({
+  static String visualizeSchedule({
     required List<({String name, int seconds})> plan,
     ({String name, int seconds, int index})? insertion,
   }) {
@@ -44,6 +46,6 @@ abstract final class Tools {
       render.writeln(anchorRender);
       render.writeln(insertionRender);
     }
-    print(render.toString());
+    return render.toString();
   }
 }

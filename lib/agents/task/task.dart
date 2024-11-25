@@ -1,14 +1,13 @@
-import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/incoming.dart';
-import 'package:mas_labs/agents/task/incoming.dart';
+import 'package:mas_labs/agents/resource/messages.dart';
+import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/main.dart';
 
 class TaskSettings extends BaseSettings {
-  final TaskInfo info;
+  final TaskInfoMini info;
 
   TaskSettings({required super.root, required super.name, required this.info});
 
@@ -17,9 +16,10 @@ class TaskSettings extends BaseSettings {
 }
 
 class TaskAgent extends BaseAgent {
-  final TaskInfo info;
+  final TaskInfoMini info;
   int foundResources = 0;
   List<Offer> offers = [];
+  SendPort? activeResource;
 
   TaskAgent(TaskSettings settings)
       : info = settings.info,
@@ -27,12 +27,11 @@ class TaskAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
-    sleep(Duration(milliseconds: random.nextInt(500) + 250));
-    if (message is StartMessage) {
+    if (message is KickTaskMessage) {
       print('Task [ $name ] started searching for the resource\n');
       foundResources = message.resources.length;
       for (var resource in message.resources) {
-        resource.send(RequestMessage(info: info, senderPort: port, senderName: name));
+        resource.send(RequestOfferMessage(info: info, senderPort: port, senderName: name));
       }
     }
     if (message is OfferMessage) {
@@ -40,10 +39,10 @@ class TaskAgent extends BaseAgent {
       offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.senderPort));
       if (offers.length == foundResources) {
         var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);
-        bestOffer.offerer.send(AcceptMessage(senderPort: port, senderName: name));
+        bestOffer.offerer.send(AcceptOfferMessage(senderPort: port, senderName: name));
         for (var offer in offers) {
           if (offer != bestOffer) {
-            offer.offerer.send(RejectMessage(senderPort: port, senderName: name));
+            offer.offerer.send(RejectOfferMessage(senderPort: port, senderName: name));
           }
         }
 
@@ -54,16 +53,21 @@ class TaskAgent extends BaseAgent {
   }
 }
 
-class TaskInfo {
+class TaskInfoMini {
   final int amount;
   final int price;
   final double rate;
 
-  TaskInfo({required this.amount, required this.price, required this.rate});
+  TaskInfoMini({required this.amount, required this.price, required this.rate});
+
+  TaskInfoMini.fromAnother(TaskInfoMini info)
+      : amount = info.amount,
+        price = info.price,
+        rate = info.rate;
 }
 
 class Offer {
-  final TaskInfo task;
+  final TaskInfoMini task;
   final int doneSeconds;
   final SendPort offerer;
 
