@@ -2,9 +2,9 @@ import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/agents/user/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
+import 'package:mas_labs/main.dart';
 
 class TaskSettings extends BaseSettings {
   final TaskInfoMini info;
