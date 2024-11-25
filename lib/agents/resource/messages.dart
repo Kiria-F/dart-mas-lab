@@ -15,3 +15,7 @@ class SecondsDoneChangedMessage extends BaseMessage {
 
   SecondsDoneChangedMessage({required this.doneSeconds, required super.senderPort, required super.senderName});
 }
+
+class ResourceDeadMessage extends BaseMessage {
+  ResourceDeadMessage({required super.senderPort, required super.senderName});
+}

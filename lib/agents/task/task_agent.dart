@@ -2,14 +2,14 @@ import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
+import 'package:mas_labs/agents/user/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
-import 'package:mas_labs/main.dart';
 
 class TaskSettings extends BaseSettings {
   final TaskInfoMini info;
 
-  TaskSettings({required super.root, required super.name, required this.info});
+  TaskSettings({required super.parentPort, required super.name, required this.info});
 
   @override
   BaseAgent createAgent() => TaskAgent(this);
@@ -23,7 +23,7 @@ class TaskAgent extends BaseAgent {
 
   TaskAgent(TaskSettings settings)
       : info = settings.info,
-        super(rootPort: settings.root, name: settings.name);
+        super(parentPort: settings.parentPort, name: settings.name);
 
   @override
   void listener(dynamic message) {
@@ -45,10 +45,11 @@ class TaskAgent extends BaseAgent {
             offer.offerer.send(RejectOfferMessage(senderPort: port, senderName: name));
           }
         }
-
-        rootPort.send(TaskDoneMessage());
-        Isolate.current.kill();
       }
+    }
+    if (message is DieMessage) {
+      print('Task [ $name ] died\n');
+      receivePort.close();
     }
   }
 }

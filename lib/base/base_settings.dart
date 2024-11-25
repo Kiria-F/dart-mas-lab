@@ -5,10 +5,10 @@ import 'package:mas_labs/base/base_agent.dart';
 typedef AgentInitializationMessage = ({BaseSettings settings, SendPort sendPort});
 
 abstract class BaseSettings {
-  final SendPort root;
+  final SendPort parentPort;
   final String name;
 
-  BaseSettings({required this.root, required this.name});
+  BaseSettings({required this.parentPort, required this.name});
   BaseAgent createAgent();
 
   Future<SendPort> spawn() async {
