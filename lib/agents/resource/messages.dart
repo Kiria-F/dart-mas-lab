@@ -6,8 +6,8 @@ class OfferMessage extends BaseMessage {
   OfferMessage({required this.doneSeconds, required super.port, required super.name});
 }
 
-class OfferIsOutdatedMessage extends BaseMessage {
-  OfferIsOutdatedMessage({required super.port, required super.name});
+class OfferAcceptAbortedMessage extends BaseMessage {
+  OfferAcceptAbortedMessage({required super.port, required super.name});
 }
 
 class OfferChangedMessage extends BaseMessage {
@@ -16,6 +16,6 @@ class OfferChangedMessage extends BaseMessage {
   OfferChangedMessage({required this.doneSeconds, required super.port, required super.name});
 }
 
-class ResourceDeadMessage extends DeadMessage {
-  ResourceDeadMessage({required super.name, required super.port});
+class ResourceDiedMessage extends DeadMessage {
+  ResourceDiedMessage({required super.name, required super.port});
 }

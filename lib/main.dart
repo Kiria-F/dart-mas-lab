@@ -45,10 +45,10 @@ void main() async {
   });
   receivePort.listen((message) {
     switch (message) {
-      case TaskDeadMessage task:
+      case TaskDiedMessage task:
         assert(tasks.remove(task));
         continue anonymous;
-      case ResourceDeadMessage resource:
+      case ResourceDiedMessage resource:
         assert(resources.remove(resource));
         continue anonymous;
       anonymous:

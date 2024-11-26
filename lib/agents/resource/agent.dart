@@ -61,7 +61,7 @@ final class ResourceAgent extends BaseAgent {
       case AcceptOfferMessage task:
         var backlogTask = backlog[task.port];
         if (backlogTask == null) {
-          task.port.send(OfferIsOutdatedMessage(port: port, name: name));
+          task.port.send(OfferAcceptAbortedMessage(port: port, name: name));
         } else {
           backlog.remove(backlogTask.info.port);
           schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
@@ -92,7 +92,7 @@ final class ResourceAgent extends BaseAgent {
         print('Resource\'s [ $name ] schedule:\n$v');
       case DieMessage _:
         print('Resource [ $name ] died\n');
-        rootPort.send(ResourceDeadMessage(name: name, port: port));
+        rootPort.send(ResourceDiedMessage(name: name, port: port));
         receivePort.close();
     }
   }

@@ -47,10 +47,33 @@ class TaskAgent extends BaseAgent {
             }
           }
         }
+      case OfferAcceptAbortedMessage offer:
+        resources[offer.port] = null;
+        offer.port.send(RequestOfferMessage(info: info, port: port, name: name));
+      case ResourceDiedMessage resource:
+        resources.remove(resource.port);
+        if (activeOffer == resource.port) {
+          activeOffer = null;
+          reviewOffers();
+        }
+      case OfferChangedMessage offer:
+        resources[offer.port] = offer.doneSeconds;
+        reviewOffers();
       case DieMessage _:
         print('Task [ $name ] died\n');
-        rootPort.send(TaskDeadMessage(name: name, port: port));
+        rootPort.send(TaskDiedMessage(name: name, port: port));
         receivePort.close();
+    }
+  }
+
+  void pollResources({bool loud = true}) {}
+
+  void reviewOffers() {
+    var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
+    if (bestOffer.key != activeOffer) {
+      activeOffer!.send(RejectOfferMessage(port: port, name: name));
+      activeOffer = bestOffer.key;
+      activeOffer!.send(AcceptOfferMessage(port: port, name: name));
     }
   }
 }
