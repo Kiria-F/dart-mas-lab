@@ -1,8 +1,8 @@
 import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/messages.dart';
+import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/agents/task/task_agent.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/main.dart';

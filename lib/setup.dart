@@ -1,7 +1,7 @@
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/resource_agent.dart';
-import 'package:mas_labs/agents/task/task_agent.dart';
+import 'package:mas_labs/agents/resource/agent.dart';
+import 'package:mas_labs/agents/task/agent.dart';
 
 class Setup {
   final SendPort rootPort;

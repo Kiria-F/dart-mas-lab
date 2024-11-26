@@ -1,4 +1,4 @@
-import 'package:mas_labs/agents/task/task_agent.dart';
+import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/base/base_message.dart';
 
 class RequestOfferMessage extends BaseMessage {
