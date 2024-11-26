@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -17,6 +18,11 @@ void main() async {
     task.send(KickTaskMessage(resources: resources));
     sleep(Duration(milliseconds: 10));
   }
+  var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
+    if (input == 'quit') {
+      receivePort.sendPort.send(DieMessage());
+    }
+  });
   receivePort.listen((message) {
     if (message is TaskDeadMessage) {
       assert(tasks.remove(message.senderPort));
@@ -31,6 +37,7 @@ void main() async {
     }
     if (tasks.isEmpty && resources.isEmpty) {
       print('All dead');
+      stdinSub.cancel();
       receivePort.close();
     }
   });
