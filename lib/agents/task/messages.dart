@@ -1,4 +1,4 @@
-import 'package:mas_labs/agents/task/task.dart';
+import 'package:mas_labs/agents/task/task_agent.dart';
 import 'package:mas_labs/base/base_message.dart';
 
 class RequestOfferMessage extends BaseMessage {
@@ -15,4 +15,6 @@ class RejectOfferMessage extends BaseMessage {
   RejectOfferMessage({required super.senderPort, required super.senderName});
 }
 
-class KysMessage {}
+class TaskDeadMessage extends BaseMessage {
+  TaskDeadMessage({required super.senderName, required super.senderPort});
+}

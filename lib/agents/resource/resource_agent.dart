@@ -2,7 +2,7 @@ import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/agents/task/task.dart';
+import 'package:mas_labs/agents/task/task_agent.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/main.dart';
@@ -11,7 +11,7 @@ import 'package:mas_labs/tools.dart';
 class ResourceSettings extends BaseSettings {
   final double performance;
 
-  ResourceSettings({required super.root, required super.name, required this.performance});
+  ResourceSettings({required super.rootPort, required super.name, required this.performance});
 
   @override
   BaseAgent createAgent() => ResourceAgent(this);
@@ -22,7 +22,7 @@ final class ResourceAgent extends BaseAgent {
   Map<SendPort, BacklogTask> backlog = {};
   List<TaskInfo> schedule = [];
 
-  ResourceAgent(ResourceSettings settings) : super(rootPort: settings.root, name: settings.name) {
+  ResourceAgent(ResourceSettings settings) : super(rootPort: settings.rootPort, name: settings.name) {
     performance = settings.performance;
   }
 
@@ -64,6 +64,7 @@ final class ResourceAgent extends BaseAgent {
         message.senderPort.send(OfferIsOutdatedMessage(senderPort: port, senderName: name));
       } else {
         backlog.remove(backlogTask.info.port);
+        schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
         var v = Tools.visualizeSchedule(
           plan: schedule
               .map((t) => (
@@ -73,7 +74,6 @@ final class ResourceAgent extends BaseAgent {
               .toList(),
         );
         print('Resource [ $name ] accepted task [ ${backlogTask.info.name} ]. New schedule:\n$v');
-        schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
         for (var i = backlogTask.scheduleIndex + 1; i < schedule.length; i++) {
           schedule[i];
         }
@@ -82,15 +82,10 @@ final class ResourceAgent extends BaseAgent {
     if (message is RejectOfferMessage) {
       backlog.remove(message.senderPort);
     }
-    if (message is KysMessage) {
-      rootPort.send(PlanDoneMessage(
-          name: name,
-          plan: schedule
-              .map(
-                (e) => (name: e.name, seconds: (e.amount / performance).ceil()),
-              )
-              .toList(growable: false)));
-      Isolate.current.kill();
+    if (message is DieMessage) {
+      print('Resource [ $name ] died\n');
+      rootPort.send(ResourceDeadMessage(senderName: name, senderPort: port));
+      receivePort.close();
     }
   }
 

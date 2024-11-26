@@ -1,4 +1,4 @@
-import 'package:mas_labs/agents/task/task.dart';
+import 'package:mas_labs/agents/task/task_agent.dart';
 
 abstract final class Tools {
   static double calcValue(TaskInfoMini task, int doneSeconds) {
