@@ -1,13 +1,12 @@
-import 'dart:isolate';
-
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/messages.dart';
+import 'package:mas_labs/shared.dart';
 
 class TaskSettings extends BaseSettings {
-  final TaskInfoMini info;
+  final TaskInfoCore info;
 
   TaskSettings({required super.rootPort, required super.name, required this.info});
 
@@ -16,9 +15,9 @@ class TaskSettings extends BaseSettings {
 }
 
 class TaskAgent extends BaseAgent {
-  final TaskInfoMini info;
-  Map<SendPort, int?> resources = {};
-  SendPort? activeOffer;
+  final TaskInfoCore info;
+  Map<AgentInfo, int?> resources = {};
+  AgentInfo? activeOffer;
 
   TaskAgent(TaskSettings settings)
       : info = settings.info,
@@ -33,32 +32,35 @@ class TaskAgent extends BaseAgent {
         print('Task [ $name ] started searching for the resource\n');
         for (var resource in initData.resources) {
           resources[resource] = null;
-          resource.send(RequestOfferMessage(info: info, port: port, name: name));
+          resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
         }
+
       case OfferMessage offer:
-        print('Task [ $name ] got offer from resource [ ${offer.name} ]\n');
-        resources[offer.port] = offer.doneSeconds;
+        resources[offer] = offer.doneSeconds;
         if (_offersCollected()) {
           var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
-          bestOffer.key.send(AcceptOfferMessage(port: port, name: name));
-          for (var resource in resources.keys) {
-            if (resource != bestOffer.key) {
-              resource.send(RejectOfferMessage(port: port, name: name));
-            }
+          if (bestOffer.key != activeOffer) {
+            activeOffer?.port.send(RejectOfferMessage(port: port, name: name));
           }
+          bestOffer.key.port.send(AcceptOfferMessage(port: port, name: name));
+          activeOffer = bestOffer.key;
         }
+
       case OfferAcceptAbortedMessage offer:
-        resources[offer.port] = null;
+        resources[offer] = null;
         offer.port.send(RequestOfferMessage(info: info, port: port, name: name));
+
       case ResourceDiedMessage resource:
-        resources.remove(resource.port);
-        if (activeOffer == resource.port) {
+        resources.remove(resource);
+        if (activeOffer == resource) {
           activeOffer = null;
-          reviewOffers();
         }
-      case OfferChangedMessage offer:
-        resources[offer.port] = offer.doneSeconds;
+        print('Task [ $name ] got to know about [ ${message.name} ] death\n');
         reviewOffers();
+      case OfferChangedMessage offer:
+        resources[offer] = offer.doneSeconds;
+        reviewOffers();
+
       case DieMessage _:
         print('Task [ $name ] died\n');
         rootPort.send(TaskDiedMessage(name: name, port: port));
@@ -69,24 +71,12 @@ class TaskAgent extends BaseAgent {
   void pollResources({bool loud = true}) {}
 
   void reviewOffers() {
+    if (!_offersCollected()) return;
     var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
     if (bestOffer.key != activeOffer) {
-      activeOffer!.send(RejectOfferMessage(port: port, name: name));
+      activeOffer?.port.send(RejectOfferMessage(port: port, name: name));
       activeOffer = bestOffer.key;
-      activeOffer!.send(AcceptOfferMessage(port: port, name: name));
+      activeOffer!.port.send(AcceptOfferMessage(port: port, name: name));
     }
   }
-}
-
-class TaskInfoMini {
-  final int amount;
-  final int price;
-  final double rate;
-
-  TaskInfoMini({required this.amount, required this.price, required this.rate});
-
-  TaskInfoMini.fromAnother(TaskInfoMini info)
-      : amount = info.amount,
-        price = info.price,
-        rate = info.rate;
 }

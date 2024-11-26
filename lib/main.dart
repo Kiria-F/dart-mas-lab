@@ -6,6 +6,7 @@ import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_message.dart';
 import 'package:mas_labs/messages.dart';
+import 'package:mas_labs/shared.dart';
 
 import 'setup.dart';
 
@@ -19,8 +20,7 @@ void main() async {
   var tasks = <AgentInfo>{}..addAll(
       await Future.wait([for (var settings in setup.taskSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
   for (var task in tasks) {
-    task.port.send(InitTaskMessage(resources: resources.map((e) => e.port)));
-    sleep(Duration(milliseconds: 10));
+    task.port.send(InitTaskMessage(resources: resources));
   }
   var exiting = false;
   var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
@@ -36,10 +36,18 @@ void main() async {
             agent.port.send(DieMessage());
           }
         }
+
       case 'view':
         var filteredResources = params.isEmpty ? resources : resources.where((r) => params.contains(r.name));
         for (var resource in filteredResources) {
           resource.port.send(ViewSchedule());
+        }
+
+      case 'kill':
+        for (var name in params) {
+          for (var agent in resources.followedBy(tasks).where((a) => a.name == name)) {
+            agent.port.send(DieMessage());
+          }
         }
     }
   });
@@ -48,9 +56,23 @@ void main() async {
       case TaskDiedMessage task:
         assert(tasks.remove(task));
         continue anonymous;
+
       case ResourceDiedMessage resource:
         assert(resources.remove(resource));
         continue anonymous;
+
+      case BroadcastMessage m:
+        switch (m.targets) {
+          case AgentType.resource:
+            for (var r in resources) {
+              r.port.send(m.message);
+            }
+          case AgentType.task:
+            for (var t in tasks) {
+              t.port.send(m.message);
+            }
+        }
+
       anonymous:
       case DeadMessage _:
         if (resources.isEmpty && tasks.isEmpty) {
@@ -60,28 +82,4 @@ void main() async {
         }
     }
   });
-}
-
-class AgentInfo {
-  SendPort port;
-  String name;
-
-  AgentInfo(this.name, this.port);
-
-  static Future<AgentInfo> fromFuture(String name, Future<SendPort> port) async {
-    return AgentInfo(name, await port);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (other is AgentInfo) {
-      if (port == other.port && name == other.name) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode => Object.hash(port, name);
 }

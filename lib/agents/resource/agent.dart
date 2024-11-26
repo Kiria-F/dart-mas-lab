@@ -1,12 +1,11 @@
 import 'dart:isolate';
 
 import 'package:mas_labs/agents/resource/messages.dart';
-import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/messages.dart';
-import 'package:mas_labs/tools.dart';
+import 'package:mas_labs/shared.dart';
 
 class ResourceSettings extends BaseSettings {
   final double performance;
@@ -30,107 +29,125 @@ final class ResourceAgent extends BaseAgent {
   void listener(dynamic message) {
     switch (message) {
       case RequestOfferMessage request:
-        var task = TaskInfo.fromTaskInfoMini(request.info, request.port, request.name);
+        var task = TaskInfo.fromCore(request.info, request.port, request.name);
         var bestValueIndex = 0;
         var bestValue = 0.0;
         var bestSeconds = 0;
-        for (var insertIndex = 0; insertIndex < schedule.length + 1; insertIndex++) {
-          var render = renderSchedule((index: insertIndex, info: task));
+        late Iterable<RenderedTask> bestRender;
+        for (var insertIndex = 0; insertIndex < schedule.length + (schedule.contains(task) ? 0 : 1); insertIndex++) {
+          var render = _renderSchedule(insertion: (index: insertIndex, info: task));
+          var insertion = render.singleWhere((t) => t.inserted);
           var value = render.fold(0.0, (v, r) => v + r.value);
           if (value > bestValue) {
+            bestValueIndex = insertIndex;
             bestValue = value;
-            bestSeconds = render.take(insertIndex + 1).fold(0, (s, r) => s + r.seconds);
+            bestSeconds = insertion.secondsTotal;
+            bestRender = render;
           }
         }
-        var v = Tools.visualizeSchedule(
-          plan: schedule
-              .map((t) => (
-                    name: t.name,
-                    seconds: (t.amount / performance).ceil(),
-                  ))
-              .toList(),
-          insertion: (
-            index: bestValueIndex,
-            name: message.name,
-            seconds: (message.info.amount / performance).ceil(),
-          ),
-        );
-        print('Resource [ $name ] got request for a new task [ ${message.name} ]. Offer sent:\n$v');
+        var v = _visualizeSchedule(bestRender);
+        print('Resource [ $name ] got request for task [ ${message.name} ]. Offer sent:\n$v\n');
         backlog[message.port] = BacklogTask.fromTaskInfo(task, bestValueIndex);
         message.port.send(OfferMessage(port: port, name: name, doneSeconds: bestSeconds));
+
       case AcceptOfferMessage task:
-        var backlogTask = backlog[task.port];
-        if (backlogTask == null) {
+        var insertingTask = backlog[task.port];
+        if (insertingTask == null) {
           task.port.send(OfferAcceptAbortedMessage(port: port, name: name));
-        } else {
-          backlog.remove(backlogTask.info.port);
-          schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
-          var v = Tools.visualizeSchedule(
-            plan: schedule
-                .map((t) => (
-                      name: t.name,
-                      seconds: (t.amount / performance).ceil(),
-                    ))
-                .toList(),
-          );
-          print('Resource [ $name ] accepted task [ ${backlogTask.info.name} ]. New schedule:\n$v');
-          for (var i = backlogTask.scheduleIndex + 1; i < schedule.length; i++) {
-            schedule[i];
-          }
+          break;
         }
+        backlog.remove(insertingTask.info.port);
+        schedule.remove(insertingTask.info);
+        schedule.insert(insertingTask.scheduleIndex, insertingTask.info);
+        var render = _renderSchedule();
+        var v = _visualizeSchedule(render);
+        print('Resource [ $name ] accepted task [ ${insertingTask.info.name} ]. New schedule:\n$v\n');
+        backlog.removeWhere((_, task) => task.scheduleIndex > insertingTask.scheduleIndex);
+        for (var i = insertingTask.scheduleIndex + 1; i < schedule.length; i++) {
+          schedule[i].port.send(OfferChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
+        }
+
       case RejectOfferMessage task:
-        backlog.remove(task.port);
+        schedule.removeWhere((t) => t.port == task.port);
+        var render = _renderSchedule();
+        for (var task in render) {
+          task.info.port.send(OfferChangedMessage(doneSeconds: task.secondsTotal, port: port, name: name));
+        }
+
       case ViewSchedule _:
-        var v = Tools.visualizeSchedule(
-          plan: schedule
-              .map((t) => (
-                    name: t.name,
-                    seconds: (t.amount / performance).ceil(),
-                  ))
-              .toList(),
-        );
-        print('Resource\'s [ $name ] schedule:\n$v');
+        var v = _visualizeSchedule(_renderSchedule());
+        print('Resource\'s [ $name ] schedule:\n$v\n');
+
       case DieMessage _:
         print('Resource [ $name ] died\n');
         rootPort.send(ResourceDiedMessage(name: name, port: port));
+        rootPort.send(BroadcastMessage(ResourceDiedMessage(name: name, port: port), AgentType.task));
         receivePort.close();
     }
   }
 
-  Iterable<RenderedTask> renderSchedule(({TaskInfo info, int index})? insertion) sync* {
-    var seconds = 0;
-    if (insertion == null) {
-      for (var task in schedule) {
-        seconds += (task.amount / performance).ceil();
-        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
-      }
-    } else {
-      for (var i = 0; i < insertion.index; i++) {
-        var task = schedule[i];
-        seconds += (task.amount / performance).ceil();
-        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
-      }
-      seconds += (insertion.info.amount / performance).ceil();
-      yield RenderedTask.fromTaskInfo(insertion.info, seconds, Tools.calcValue(insertion.info, seconds));
-      for (var i = insertion.index; i < schedule.length; i++) {
-        var task = schedule[i];
-        seconds += (task.amount / performance).ceil();
-        yield RenderedTask.fromTaskInfo(task, seconds, Tools.calcValue(task, seconds));
+  List<RenderedTask> _renderSchedule({({TaskInfo info, int index})? insertion}) {
+    var preRender = schedule.map((e) => RenderedTask.fromTaskInfo(e, 0, 0, 0, false));
+    if (insertion != null) {
+      preRender = preRender.where((e) => e.info != insertion.info);
+    }
+    var render = preRender.toList();
+    if (insertion != null) {
+      render.insert(insertion.index, RenderedTask.fromTaskInfo(insertion.info, 0, 0, 0, true));
+    }
+    var secondsTotal = 0;
+    for (var task in render) {
+      task.seconds = (task.info.amount / performance).ceil();
+      secondsTotal += task.seconds;
+      task.secondsTotal = secondsTotal;
+      task.value = _calcValue(task.info, secondsTotal);
+    }
+    return render;
+  }
+
+  static double _calcValue(TaskInfoCore task, int doneSeconds) {
+    assert(0 < task.rate && task.rate < 1);
+    var decreaser = 1 - task.rate;
+    var resultPrice = task.price.toDouble();
+    for (var i = 0; i < doneSeconds; i++) {
+      resultPrice *= decreaser;
+    }
+    return resultPrice;
+  }
+
+  static String _visualizeSchedule(Iterable<RenderedTask> renderedSchedule) {
+    double wrapper = 5;
+    var insertionDone = false;
+    StringBuffer planRender = StringBuffer('[ ');
+    StringBuffer anchorRender = StringBuffer('  ');
+    StringBuffer insertionRender = StringBuffer('  ');
+
+    for (var task in renderedSchedule) {
+      if (task.inserted) {
+        assert(!insertionDone);
+        planRender.write(' ');
+        anchorRender.write('^');
+        insertionRender.write(task.info.name[0] * (task.seconds / wrapper).ceil());
+        insertionDone = true;
+      } else {
+        var size = (task.seconds / wrapper).ceil();
+        planRender.write(task.info.name[0] * size);
+        if (!insertionDone) {
+          anchorRender.write(' ' * size);
+          insertionRender.write(' ' * size);
+        }
       }
     }
+    planRender.write(' ]');
+    var render = StringBuffer();
+    render.write(planRender);
+    if (insertionDone) {
+      render.writeln();
+      render.writeln(anchorRender);
+      render.write(insertionRender);
+    }
+    return render.toString();
   }
-}
-
-class TaskInfo extends TaskInfoMini {
-  final SendPort port;
-  final String name;
-
-  TaskInfo.fromTaskInfoMini(super.info, this.port, this.name) : super.fromAnother();
-
-  TaskInfo.fromAnother(TaskInfo super.info)
-      : port = info.port,
-        name = info.name,
-        super.fromAnother();
 }
 
 class BacklogTask {
@@ -142,8 +159,10 @@ class BacklogTask {
 
 class RenderedTask {
   final TaskInfo info;
-  final int seconds;
-  final double value;
+  int seconds;
+  int secondsTotal;
+  double value;
+  final bool inserted;
 
-  RenderedTask.fromTaskInfo(this.info, this.seconds, this.value);
+  RenderedTask.fromTaskInfo(this.info, this.seconds, this.secondsTotal, this.value, this.inserted);
 }

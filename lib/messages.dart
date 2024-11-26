@@ -1,7 +1,8 @@
-import 'dart:isolate';
+import 'package:mas_labs/base/base_message.dart';
+import 'package:mas_labs/shared.dart';
 
 class InitTaskMessage {
-  final Iterable<SendPort> resources;
+  final Iterable<AgentInfo> resources;
 
   InitTaskMessage({required this.resources});
 }
@@ -9,3 +10,15 @@ class InitTaskMessage {
 class DieMessage {}
 
 class ViewSchedule {}
+
+enum AgentType {
+  resource,
+  task,
+}
+
+class BroadcastMessage {
+  BaseMessage message;
+  AgentType targets;
+
+  BroadcastMessage(this.message, this.targets);
+}

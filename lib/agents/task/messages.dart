@@ -1,8 +1,8 @@
-import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/base/base_message.dart';
+import 'package:mas_labs/shared.dart';
 
 class RequestOfferMessage extends BaseMessage {
-  final TaskInfoMini info;
+  final TaskInfoCore info;
 
   RequestOfferMessage({required this.info, required super.port, required super.name});
 }
