@@ -31,25 +31,25 @@ class TaskAgent extends BaseAgent {
       print('Task [ $name ] started searching for the resource\n');
       foundResources = message.resources.length;
       for (var resource in message.resources) {
-        resource.send(RequestOfferMessage(info: info, senderPort: port, senderName: name));
+        resource.send(RequestOfferMessage(info: info, port: port, name: name));
       }
     }
     if (message is OfferMessage) {
-      print('Task [ $name ] got offer from resource [ ${message.senderName} ]\n');
-      offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.senderPort));
+      print('Task [ $name ] got offer from resource [ ${message.name} ]\n');
+      offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.port));
       if (offers.length == foundResources) {
         var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);
-        bestOffer.offerer.send(AcceptOfferMessage(senderPort: port, senderName: name));
+        bestOffer.offerer.send(AcceptOfferMessage(port: port, name: name));
         for (var offer in offers) {
           if (offer != bestOffer) {
-            offer.offerer.send(RejectOfferMessage(senderPort: port, senderName: name));
+            offer.offerer.send(RejectOfferMessage(port: port, name: name));
           }
         }
       }
     }
     if (message is DieMessage) {
       print('Task [ $name ] died\n');
-      rootPort.send(TaskDeadMessage(senderName: name, senderPort: port));
+      rootPort.send(TaskDeadMessage(name: name, port: port));
       receivePort.close();
     }
   }

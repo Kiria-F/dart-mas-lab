@@ -1,7 +1,7 @@
 import 'dart:isolate';
 
 class KickTaskMessage {
-  final Set<SendPort> resources;
+  final Iterable<SendPort> resources;
 
   KickTaskMessage({required this.resources});
 }

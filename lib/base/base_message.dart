@@ -1,12 +1,11 @@
 import 'dart:isolate';
 
-class BaseMessage {
-  final SendPort senderPort;
-  final String senderName;
+import 'package:mas_labs/main.dart';
 
-  BaseMessage({required this.senderPort, required this.senderName});
+class BaseMessage extends AgentInfo {
+  BaseMessage({required String name, required SendPort port}) : super(name, port);
 }
 
 class DeadMessage extends BaseMessage {
-  DeadMessage({required super.senderName, required super.senderPort});
+  DeadMessage({required super.name, required super.port});
 }

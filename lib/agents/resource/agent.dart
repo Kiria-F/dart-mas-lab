@@ -29,7 +29,7 @@ final class ResourceAgent extends BaseAgent {
   @override
   void listener(dynamic message) {
     if (message is RequestOfferMessage) {
-      var task = TaskInfo.fromTaskInfoMini(message.info, message.senderPort, message.senderName);
+      var task = TaskInfo.fromTaskInfoMini(message.info, message.port, message.name);
       var bestValueIndex = 0;
       var bestValue = 0.0;
       var bestSeconds = 0;
@@ -50,18 +50,18 @@ final class ResourceAgent extends BaseAgent {
             .toList(),
         insertion: (
           index: bestValueIndex,
-          name: message.senderName,
+          name: message.name,
           seconds: (message.info.amount / performance).ceil(),
         ),
       );
-      print('Resource [ $name ] got request for a new task [ ${message.senderName} ]. Offer sent:\n$v');
-      backlog[message.senderPort] = BacklogTask.fromTaskInfo(task, bestValueIndex);
-      message.senderPort.send(OfferMessage(senderPort: port, senderName: name, doneSeconds: bestSeconds));
+      print('Resource [ $name ] got request for a new task [ ${message.name} ]. Offer sent:\n$v');
+      backlog[message.port] = BacklogTask.fromTaskInfo(task, bestValueIndex);
+      message.port.send(OfferMessage(port: port, name: name, doneSeconds: bestSeconds));
     }
     if (message is AcceptOfferMessage) {
-      var backlogTask = backlog[message.senderPort];
+      var backlogTask = backlog[message.port];
       if (backlogTask == null) {
-        message.senderPort.send(OfferIsOutdatedMessage(senderPort: port, senderName: name));
+        message.port.send(OfferIsOutdatedMessage(port: port, name: name));
       } else {
         backlog.remove(backlogTask.info.port);
         schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
@@ -80,7 +80,7 @@ final class ResourceAgent extends BaseAgent {
       }
     }
     if (message is RejectOfferMessage) {
-      backlog.remove(message.senderPort);
+      backlog.remove(message.port);
     }
     if (message is ViewSchedule) {
       var v = Tools.visualizeSchedule(
@@ -95,7 +95,7 @@ final class ResourceAgent extends BaseAgent {
     }
     if (message is DieMessage) {
       print('Resource [ $name ] died\n');
-      rootPort.send(ResourceDeadMessage(senderName: name, senderPort: port));
+      rootPort.send(ResourceDeadMessage(name: name, port: port));
       receivePort.close();
     }
   }
