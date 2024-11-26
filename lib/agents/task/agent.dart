@@ -17,32 +17,33 @@ class TaskSettings extends BaseSettings {
 
 class TaskAgent extends BaseAgent {
   final TaskInfoMini info;
-  int foundResources = 0;
-  List<Offer> offers = [];
-  SendPort? activeResource;
+  Map<SendPort, int?> resources = {};
+  SendPort? activeOffer;
 
   TaskAgent(TaskSettings settings)
       : info = settings.info,
         super(rootPort: settings.rootPort, name: settings.name);
 
+  bool _offersCollected() => resources.values.fold(true, (a, b) => a && b != null);
+
   @override
   void listener(dynamic message) {
-    if (message is KickTaskMessage) {
+    if (message is InitTaskMessage) {
       print('Task [ $name ] started searching for the resource\n');
-      foundResources = message.resources.length;
       for (var resource in message.resources) {
+        resources[resource] = null;
         resource.send(RequestOfferMessage(info: info, port: port, name: name));
       }
     }
     if (message is OfferMessage) {
       print('Task [ $name ] got offer from resource [ ${message.name} ]\n');
-      offers.add(Offer(task: info, doneSeconds: message.doneSeconds, offerer: message.port));
-      if (offers.length == foundResources) {
-        var bestOffer = offers.reduce((a, b) => a.doneSeconds < b.doneSeconds ? a : b);
-        bestOffer.offerer.send(AcceptOfferMessage(port: port, name: name));
-        for (var offer in offers) {
-          if (offer != bestOffer) {
-            offer.offerer.send(RejectOfferMessage(port: port, name: name));
+      resources[message.port] = message.doneSeconds;
+      if (_offersCollected()) {
+        var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
+        bestOffer.key.send(AcceptOfferMessage(port: port, name: name));
+        for (var resource in resources.keys) {
+          if (resource != bestOffer.key) {
+            resource.send(RejectOfferMessage(port: port, name: name));
           }
         }
       }
@@ -66,12 +67,4 @@ class TaskInfoMini {
       : amount = info.amount,
         price = info.price,
         rate = info.rate;
-}
-
-class Offer {
-  final TaskInfoMini task;
-  final int doneSeconds;
-  final SendPort offerer;
-
-  Offer({required this.task, required this.doneSeconds, required this.offerer});
 }

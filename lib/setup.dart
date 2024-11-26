@@ -10,10 +10,10 @@ class Setup {
 
   List<ResourceSettings> get resourceSetup {
     return [
-      ResourceSettings(rootPort: rootPort, name: 'W10', performance: 5),
-      ResourceSettings(rootPort: rootPort, name: 'W9', performance: 4.5),
-      ResourceSettings(rootPort: rootPort, name: 'W8', performance: 4),
-      ResourceSettings(rootPort: rootPort, name: 'W7', performance: 3.5),
+      ResourceSettings(rootPort: rootPort, name: 'R10', performance: 5),
+      ResourceSettings(rootPort: rootPort, name: 'R9', performance: 4.5),
+      ResourceSettings(rootPort: rootPort, name: 'R8', performance: 4),
+      ResourceSettings(rootPort: rootPort, name: 'R7', performance: 3.5),
     ];
   }
 

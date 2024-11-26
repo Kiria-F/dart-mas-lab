@@ -19,13 +19,13 @@ void main() async {
   var tasks = <AgentInfo>{}..addAll(
       await Future.wait([for (var settings in setup.taskSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
   for (var task in tasks) {
-    task.port.send(KickTaskMessage(resources: resources.map((e) => e.port)));
+    task.port.send(InitTaskMessage(resources: resources.map((e) => e.port)));
     sleep(Duration(milliseconds: 10));
   }
   var exiting = false;
   var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
     if (input.isEmpty) return;
-    print('${'-' * input.length}\n');
+    print('${'=' * input.length}\n');
     var params = input.split(' ').sublist(1);
     if (input == 'quit') {
       if (!exiting) {
@@ -51,7 +51,7 @@ void main() async {
         assert(resources.remove(message));
       }
       if (resources.isEmpty && tasks.isEmpty) {
-        print('All died');
+        print('All agents successfully died\n');
         stdinSub.cancel();
         receivePort.close();
       }
