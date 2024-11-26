@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:mas_labs/agents/resource/agent.dart';
 import 'package:mas_labs/agents/resource/messages.dart';
+import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_message.dart';
 import 'package:mas_labs/messages.dart';
@@ -14,16 +16,14 @@ void main() async {
   print('');
   var receivePort = ReceivePort();
   var setup = Setup(receivePort.sendPort);
-  var resources = <AgentInfo>{}..addAll(await Future.wait(
-      [for (var settings in setup.resourceSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
+  var resources = <AgentInfo>{}..addAll(await Future.wait([for (var settings in setup.resourceSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
   setup.taskSetup.shuffle();
-  var tasks = <AgentInfo>{}..addAll(
-      await Future.wait([for (var settings in setup.taskSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
+  var tasks = <AgentInfo>{}..addAll(await Future.wait([for (var settings in setup.taskSetup) AgentInfo.fromFuture(settings.name, settings.spawn())]));
   for (var task in tasks) {
     task.port.send(InitTaskMessage(resources: resources));
   }
   var exiting = false;
-  var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
+  var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) async {
     if (input.isEmpty) return;
     print('${'=' * input.length}\n');
     var cmd = input.split(' ').first;
@@ -49,6 +49,31 @@ void main() async {
             agent.port.send(DieMessage());
           }
         }
+
+      case 'born':
+        switch (params) {
+          case ['Resource' || 'resource', var name, var performanceStr]:
+            var performance = double.tryParse(performanceStr);
+            if (performance == null) break;
+            var resource = AgentInfo(name, await ResourceSettings(rootPort: receivePort.sendPort, name: name, performance: performance).spawn());
+            receivePort.sendPort.send(BroadcastMessage(ResourceBornMessage(name: resource.name, port: resource.port), AgentType.task));
+            resources.add(resource);
+
+          case ['Task' || 'task', var name, var amountStr, var priceStr, var rateStr]:
+            var amount = int.tryParse(amountStr);
+            var price = int.tryParse(priceStr);
+            var rate = double.tryParse(rateStr);
+            if (amount == null || price == null || rate == null) break;
+            var task = AgentInfo(
+                name, await TaskSettings(rootPort: receivePort.sendPort, name: name, info: TaskInfoCore(amount: amount, price: price, rate: rate)).spawn());
+            tasks.add(task);
+            task.port.send(InitTaskMessage(resources: resources));
+
+          case _:
+            print('Incorrect command, acceptable variants:\n- born resource <name> <performance>\n- born task <name> <amount> <price> <rate>\n');
+        }
+      case _:
+        print('Incorrect command, acceptable variants:\nborn, view, kill, qiut\n');
     }
   });
   receivePort.listen((message) {

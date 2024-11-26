@@ -35,6 +35,14 @@ class TaskAgent extends BaseAgent {
           resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
         }
 
+      case ResourceBornMessage resource:
+        resources[resource] = null;
+        resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
+
+      case ResourceUpdatedMessage resource:
+        resources[resource] = null;
+        resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
+
       case OfferMessage offer:
         resources[offer] = offer.doneSeconds;
         if (_offersCollected()) {
@@ -63,6 +71,7 @@ class TaskAgent extends BaseAgent {
 
       case DieMessage _:
         print('Task [ $name ] died\n');
+        activeOffer?.port.send(TaskDiedMessage(name: name, port: port));
         rootPort.send(TaskDiedMessage(name: name, port: port));
         receivePort.close();
     }

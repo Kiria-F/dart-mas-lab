@@ -22,3 +22,7 @@ class BroadcastMessage {
 
   BroadcastMessage(this.message, this.targets);
 }
+
+class ResourceBornMessage extends BaseMessage {
+  ResourceBornMessage({required super.name, required super.port});
+}

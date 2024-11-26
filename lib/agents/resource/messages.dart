@@ -1,5 +1,9 @@
 import 'package:mas_labs/base/base_message.dart';
 
+class ResourceUpdatedMessage extends BaseMessage {
+  ResourceUpdatedMessage({required super.name, required super.port});
+}
+
 class OfferMessage extends BaseMessage {
   final int doneSeconds;
 

@@ -52,7 +52,7 @@ final class ResourceAgent extends BaseAgent {
 
       case AcceptOfferMessage task:
         var insertingTask = backlog[task.port];
-        if (insertingTask == null) {
+        if (insertingTask == null || insertingTask.scheduleIndex > schedule.length) {
           task.port.send(OfferAcceptAbortedMessage(port: port, name: name));
           break;
         }
@@ -72,6 +72,18 @@ final class ResourceAgent extends BaseAgent {
         var render = _renderSchedule();
         for (var task in render) {
           task.info.port.send(OfferChangedMessage(doneSeconds: task.secondsTotal, port: port, name: name));
+        }
+
+      case TaskDiedMessage task:
+        var index = schedule.indexWhere((e) => e.port == task.port);
+        if (index >= 0) {
+          schedule.removeAt(index);
+          var render = _renderSchedule();
+          for (var i = index; i < schedule.length; i++) {
+            schedule[i].port.send(OfferChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
+          }
+          backlog.removeWhere((k, v) => v.scheduleIndex > index);
+          rootPort.send(BroadcastMessage(ResourceUpdatedMessage(name: name, port: port), AgentType.task));
         }
 
       case ViewSchedule _:
