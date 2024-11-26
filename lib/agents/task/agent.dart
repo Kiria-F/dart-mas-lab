@@ -28,30 +28,29 @@ class TaskAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
-    if (message is InitTaskMessage) {
-      print('Task [ $name ] started searching for the resource\n');
-      for (var resource in message.resources) {
-        resources[resource] = null;
-        resource.send(RequestOfferMessage(info: info, port: port, name: name));
-      }
-    }
-    if (message is OfferMessage) {
-      print('Task [ $name ] got offer from resource [ ${message.name} ]\n');
-      resources[message.port] = message.doneSeconds;
-      if (_offersCollected()) {
-        var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
-        bestOffer.key.send(AcceptOfferMessage(port: port, name: name));
-        for (var resource in resources.keys) {
-          if (resource != bestOffer.key) {
-            resource.send(RejectOfferMessage(port: port, name: name));
+    switch (message) {
+      case InitTaskMessage initData:
+        print('Task [ $name ] started searching for the resource\n');
+        for (var resource in initData.resources) {
+          resources[resource] = null;
+          resource.send(RequestOfferMessage(info: info, port: port, name: name));
+        }
+      case OfferMessage offer:
+        print('Task [ $name ] got offer from resource [ ${offer.name} ]\n');
+        resources[offer.port] = offer.doneSeconds;
+        if (_offersCollected()) {
+          var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
+          bestOffer.key.send(AcceptOfferMessage(port: port, name: name));
+          for (var resource in resources.keys) {
+            if (resource != bestOffer.key) {
+              resource.send(RejectOfferMessage(port: port, name: name));
+            }
           }
         }
-      }
-    }
-    if (message is DieMessage) {
-      print('Task [ $name ] died\n');
-      rootPort.send(TaskDeadMessage(name: name, port: port));
-      receivePort.close();
+      case DieMessage _:
+        print('Task [ $name ] died\n');
+        rootPort.send(TaskDeadMessage(name: name, port: port));
+        receivePort.close();
     }
   }
 }

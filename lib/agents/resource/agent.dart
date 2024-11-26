@@ -28,43 +28,59 @@ final class ResourceAgent extends BaseAgent {
 
   @override
   void listener(dynamic message) {
-    if (message is RequestOfferMessage) {
-      var task = TaskInfo.fromTaskInfoMini(message.info, message.port, message.name);
-      var bestValueIndex = 0;
-      var bestValue = 0.0;
-      var bestSeconds = 0;
-      for (var insertIndex = 0; insertIndex < schedule.length + 1; insertIndex++) {
-        var render = renderSchedule((index: insertIndex, info: task));
-        var value = render.fold(0.0, (v, r) => v + r.value);
-        if (value > bestValue) {
-          bestValue = value;
-          bestSeconds = render.take(insertIndex + 1).fold(0, (s, r) => s + r.seconds);
+    switch (message) {
+      case RequestOfferMessage request:
+        var task = TaskInfo.fromTaskInfoMini(request.info, request.port, request.name);
+        var bestValueIndex = 0;
+        var bestValue = 0.0;
+        var bestSeconds = 0;
+        for (var insertIndex = 0; insertIndex < schedule.length + 1; insertIndex++) {
+          var render = renderSchedule((index: insertIndex, info: task));
+          var value = render.fold(0.0, (v, r) => v + r.value);
+          if (value > bestValue) {
+            bestValue = value;
+            bestSeconds = render.take(insertIndex + 1).fold(0, (s, r) => s + r.seconds);
+          }
         }
-      }
-      var v = Tools.visualizeSchedule(
-        plan: schedule
-            .map((t) => (
-                  name: t.name,
-                  seconds: (t.amount / performance).ceil(),
-                ))
-            .toList(),
-        insertion: (
-          index: bestValueIndex,
-          name: message.name,
-          seconds: (message.info.amount / performance).ceil(),
-        ),
-      );
-      print('Resource [ $name ] got request for a new task [ ${message.name} ]. Offer sent:\n$v');
-      backlog[message.port] = BacklogTask.fromTaskInfo(task, bestValueIndex);
-      message.port.send(OfferMessage(port: port, name: name, doneSeconds: bestSeconds));
-    }
-    if (message is AcceptOfferMessage) {
-      var backlogTask = backlog[message.port];
-      if (backlogTask == null) {
-        message.port.send(OfferIsOutdatedMessage(port: port, name: name));
-      } else {
-        backlog.remove(backlogTask.info.port);
-        schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
+        var v = Tools.visualizeSchedule(
+          plan: schedule
+              .map((t) => (
+                    name: t.name,
+                    seconds: (t.amount / performance).ceil(),
+                  ))
+              .toList(),
+          insertion: (
+            index: bestValueIndex,
+            name: message.name,
+            seconds: (message.info.amount / performance).ceil(),
+          ),
+        );
+        print('Resource [ $name ] got request for a new task [ ${message.name} ]. Offer sent:\n$v');
+        backlog[message.port] = BacklogTask.fromTaskInfo(task, bestValueIndex);
+        message.port.send(OfferMessage(port: port, name: name, doneSeconds: bestSeconds));
+      case AcceptOfferMessage task:
+        var backlogTask = backlog[task.port];
+        if (backlogTask == null) {
+          task.port.send(OfferIsOutdatedMessage(port: port, name: name));
+        } else {
+          backlog.remove(backlogTask.info.port);
+          schedule.insert(backlogTask.scheduleIndex, backlogTask.info);
+          var v = Tools.visualizeSchedule(
+            plan: schedule
+                .map((t) => (
+                      name: t.name,
+                      seconds: (t.amount / performance).ceil(),
+                    ))
+                .toList(),
+          );
+          print('Resource [ $name ] accepted task [ ${backlogTask.info.name} ]. New schedule:\n$v');
+          for (var i = backlogTask.scheduleIndex + 1; i < schedule.length; i++) {
+            schedule[i];
+          }
+        }
+      case RejectOfferMessage task:
+        backlog.remove(task.port);
+      case ViewSchedule _:
         var v = Tools.visualizeSchedule(
           plan: schedule
               .map((t) => (
@@ -73,30 +89,11 @@ final class ResourceAgent extends BaseAgent {
                   ))
               .toList(),
         );
-        print('Resource [ $name ] accepted task [ ${backlogTask.info.name} ]. New schedule:\n$v');
-        for (var i = backlogTask.scheduleIndex + 1; i < schedule.length; i++) {
-          schedule[i];
-        }
-      }
-    }
-    if (message is RejectOfferMessage) {
-      backlog.remove(message.port);
-    }
-    if (message is ViewSchedule) {
-      var v = Tools.visualizeSchedule(
-        plan: schedule
-            .map((t) => (
-                  name: t.name,
-                  seconds: (t.amount / performance).ceil(),
-                ))
-            .toList(),
-      );
-      print('Resource\'s [ $name ] schedule:\n$v');
-    }
-    if (message is DieMessage) {
-      print('Resource [ $name ] died\n');
-      rootPort.send(ResourceDeadMessage(name: name, port: port));
-      receivePort.close();
+        print('Resource\'s [ $name ] schedule:\n$v');
+      case DieMessage _:
+        print('Resource [ $name ] died\n');
+        rootPort.send(ResourceDeadMessage(name: name, port: port));
+        receivePort.close();
     }
   }
 

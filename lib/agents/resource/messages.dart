@@ -10,10 +10,10 @@ class OfferIsOutdatedMessage extends BaseMessage {
   OfferIsOutdatedMessage({required super.port, required super.name});
 }
 
-class SecondsDoneChangedMessage extends BaseMessage {
+class OfferChangedMessage extends BaseMessage {
   final int doneSeconds;
 
-  SecondsDoneChangedMessage({required this.doneSeconds, required super.port, required super.name});
+  OfferChangedMessage({required this.doneSeconds, required super.port, required super.name});
 }
 
 class ResourceDeadMessage extends DeadMessage {

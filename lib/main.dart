@@ -26,35 +26,38 @@ void main() async {
   var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
     if (input.isEmpty) return;
     print('${'=' * input.length}\n');
+    var cmd = input.split(' ').first;
     var params = input.split(' ').sublist(1);
-    if (input == 'quit') {
-      if (!exiting) {
-        exiting = true;
-        for (var agent in tasks.followedBy(resources)) {
-          agent.port.send(DieMessage());
+    switch (cmd) {
+      case 'quit':
+        if (!exiting) {
+          exiting = true;
+          for (var agent in tasks.followedBy(resources)) {
+            agent.port.send(DieMessage());
+          }
         }
-      }
-    }
-    if (input.startsWith('view')) {
-      var filteredResources = params.isEmpty ? resources : resources.where((r) => params.contains(r.name));
-      for (var resource in filteredResources) {
-        resource.port.send(ViewSchedule());
-      }
+      case 'view':
+        var filteredResources = params.isEmpty ? resources : resources.where((r) => params.contains(r.name));
+        for (var resource in filteredResources) {
+          resource.port.send(ViewSchedule());
+        }
     }
   });
   receivePort.listen((message) {
-    if (message is DeadMessage) {
-      if (message is TaskDeadMessage) {
-        assert(tasks.remove(message));
-      }
-      if (message is ResourceDeadMessage) {
-        assert(resources.remove(message));
-      }
-      if (resources.isEmpty && tasks.isEmpty) {
-        print('All agents successfully died\n');
-        stdinSub.cancel();
-        receivePort.close();
-      }
+    switch (message) {
+      case TaskDeadMessage task:
+        assert(tasks.remove(task));
+        continue anonymous;
+      case ResourceDeadMessage resource:
+        assert(resources.remove(resource));
+        continue anonymous;
+      anonymous:
+      case DeadMessage _:
+        if (resources.isEmpty && tasks.isEmpty) {
+          print('All agents successfully died\n');
+          stdinSub.cancel();
+          receivePort.close();
+        }
     }
   });
 }
