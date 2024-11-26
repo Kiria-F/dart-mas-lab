@@ -24,7 +24,9 @@ void main() async {
     if (input == 'quit') {
       if (!exiting) {
         exiting = true;
-        receivePort.sendPort.send(DieMessage());
+        for (var agent in tasks.followedBy(resources)) {
+          agent.send(DieMessage());
+        }
       }
     }
   });
@@ -37,14 +39,9 @@ void main() async {
         assert(resources.remove(message.senderPort));
       }
       if (resources.isEmpty && tasks.isEmpty) {
-        print('All dead');
+        print('All died');
         stdinSub.cancel();
         receivePort.close();
-      }
-    }
-    if (message is DieMessage) {
-      for (var agent in tasks.followedBy(resources)) {
-        agent.send(DieMessage());
       }
     }
   });
