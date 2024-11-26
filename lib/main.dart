@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_message.dart';
+import 'package:mas_labs/messages.dart';
 
 import 'setup.dart';
 
@@ -21,12 +22,18 @@ void main() async {
   }
   var exiting = false;
   var stdinSub = stdin.transform(utf8.decoder).transform(LineSplitter()).listen((input) {
+    print('${'-' * input.length}\n');
     if (input == 'quit') {
       if (!exiting) {
         exiting = true;
         for (var agent in tasks.followedBy(resources)) {
           agent.send(DieMessage());
         }
+      }
+    }
+    if (input == 'view') {
+      for (var resource in resources) {
+        resource.send(ViewSchedule());
       }
     }
   });
@@ -46,11 +53,3 @@ void main() async {
     }
   });
 }
-
-class KickTaskMessage {
-  final Set<SendPort> resources;
-
-  KickTaskMessage({required this.resources});
-}
-
-class DieMessage {}

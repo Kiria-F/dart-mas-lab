@@ -5,7 +5,7 @@ import 'package:mas_labs/agents/task/agent.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
 import 'package:mas_labs/base/base_settings.dart';
-import 'package:mas_labs/main.dart';
+import 'package:mas_labs/messages.dart';
 import 'package:mas_labs/tools.dart';
 
 class ResourceSettings extends BaseSettings {
@@ -81,6 +81,17 @@ final class ResourceAgent extends BaseAgent {
     }
     if (message is RejectOfferMessage) {
       backlog.remove(message.senderPort);
+    }
+    if (message is ViewSchedule) {
+      var v = Tools.visualizeSchedule(
+        plan: schedule
+            .map((t) => (
+                  name: t.name,
+                  seconds: (t.amount / performance).ceil(),
+                ))
+            .toList(),
+      );
+      print('Resource\'s [ $name ] schedule:\n$v');
     }
     if (message is DieMessage) {
       print('Resource [ $name ] died\n');
