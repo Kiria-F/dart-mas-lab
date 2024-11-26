@@ -1,6 +1,7 @@
 import 'package:mas_labs/agents/resource/messages.dart';
 import 'package:mas_labs/agents/task/messages.dart';
 import 'package:mas_labs/base/base_agent.dart';
+import 'package:mas_labs/base/base_message.dart';
 import 'package:mas_labs/base/base_settings.dart';
 import 'package:mas_labs/messages.dart';
 import 'package:mas_labs/shared.dart';
@@ -35,11 +36,7 @@ class TaskAgent extends BaseAgent {
           resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
         }
 
-      case ResourceBornMessage resource:
-        resources[resource] = null;
-        resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
-
-      case ResourceUpdatedMessage resource:
+      case BaseMessage resource when resource is ResourceBornMessage || resource is ResourceUpdatedMessage:
         resources[resource] = null;
         resource.port.send(RequestOfferMessage(info: info, port: port, name: name));
 
