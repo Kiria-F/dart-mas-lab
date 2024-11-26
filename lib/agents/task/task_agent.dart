@@ -45,7 +45,6 @@ class TaskAgent extends BaseAgent {
             offer.offerer.send(RejectOfferMessage(senderPort: port, senderName: name));
           }
         }
-        port.send(DieMessage());
       }
     }
     if (message is DieMessage) {

@@ -15,6 +15,6 @@ class RejectOfferMessage extends BaseMessage {
   RejectOfferMessage({required super.senderPort, required super.senderName});
 }
 
-class TaskDeadMessage extends BaseMessage {
+class TaskDeadMessage extends DeadMessage {
   TaskDeadMessage({required super.senderName, required super.senderPort});
 }

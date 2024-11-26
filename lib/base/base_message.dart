@@ -6,3 +6,7 @@ class BaseMessage {
 
   BaseMessage({required this.senderPort, required this.senderName});
 }
+
+class DeadMessage extends BaseMessage {
+  DeadMessage({required super.senderName, required super.senderPort});
+}
