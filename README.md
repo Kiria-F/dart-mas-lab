@@ -429,14 +429,6 @@ Resource [ R9 ] died
 
 Resource [ R10 ] died
 
-Task [ N ] got to know about [ R10 ] death
-
-Task [ N ] got to know about [ R9 ] death
-
-Task [ B ] got to know about [ R10 ] death
-
-Task [ B ] got to know about [ R9 ] death
-
 Task [ N ] accepted offer from Resource [ R8 ]. Its new schedule:
 [ N ]
 

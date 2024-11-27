@@ -51,7 +51,6 @@ class TaskAgent extends BaseAgent {
         if (activeOffer == resource) {
           activeOffer = null;
         }
-        print('Task [ $name ] got to know about [ ${message.name} ] death\n');
         reviewOffers();
 
       case ScheduleChangedMessage offer:
