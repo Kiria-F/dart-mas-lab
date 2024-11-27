@@ -50,7 +50,7 @@ void main() async {
           }
         }
 
-      case 'born':
+      case 'bring':
         switch (params) {
           case ['Resource' || 'resource', var name, var performanceStr]:
             var performance = double.tryParse(performanceStr);
@@ -70,10 +70,10 @@ void main() async {
             task.port.send(InitTaskMessage(resources: resources));
 
           case _:
-            print('Incorrect command, acceptable variants:\n- born resource <name> <performance>\n- born task <name> <amount> <price> <rate>\n');
+            print('Incorrect command, acceptable variants:\n- bring resource <name> <performance>\n- bring task <name> <amount> <price> <rate>\n');
         }
       case _:
-        print('Incorrect command, acceptable variants:\nborn, view, kill, qiut\n');
+        print('Incorrect command, acceptable variants:\nbring, view, kill, qiut\n');
     }
   });
   receivePort.listen((message) {

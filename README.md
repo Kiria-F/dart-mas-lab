@@ -235,7 +235,7 @@ Task [ B ] revoked agreement with Resource [ R10 ]. Its new schedule:
 Ввод в консоль:
 
 ```
-born task N 9 100 0.35
+bring task N 9 100 0.35
 ```
 
 Вывод консоли:
@@ -280,7 +280,7 @@ Task [ B ] accepted offer from Resource [ R10 ]. Its new schedule:
 Ввод в консоль:
 
 ```
-born resource R8 4
+bring resource R8 4
 ```
 
 Вывод консоли:
