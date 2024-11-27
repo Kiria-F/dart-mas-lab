@@ -1,5 +1,5 @@
-import 'package:mas_labs/base/base_message.dart';
-import 'package:mas_labs/shared.dart';
+import 'package:mas_lab/agents/base/messages.dart';
+import 'package:mas_lab/shared.dart';
 
 class RequestOfferMessage extends BaseMessage {
   final TaskInfoCore info;
@@ -11,8 +11,8 @@ class AcceptOfferMessage extends BaseMessage {
   AcceptOfferMessage({required super.port, required super.name});
 }
 
-class RejectOfferMessage extends BaseMessage {
-  RejectOfferMessage({required super.port, required super.name});
+class RevokeAgreementMessage extends BaseMessage {
+  RevokeAgreementMessage({required super.port, required super.name});
 }
 
 class TaskDiedMessage extends DeadMessage {

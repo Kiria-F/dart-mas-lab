@@ -1,6 +1,6 @@
 import 'dart:isolate';
 
-import 'package:mas_labs/shared.dart';
+import 'package:mas_lab/shared.dart';
 
 class BaseMessage extends AgentInfo {
   BaseMessage({required String name, required SendPort port}) : super(name, port);

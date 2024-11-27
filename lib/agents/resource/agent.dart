@@ -1,20 +1,11 @@
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/messages.dart';
-import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/base/base_agent.dart';
-import 'package:mas_labs/base/base_settings.dart';
-import 'package:mas_labs/messages.dart';
-import 'package:mas_labs/shared.dart';
-
-class ResourceSettings extends BaseSettings {
-  final double performance;
-
-  ResourceSettings({required super.rootPort, required super.name, required this.performance});
-
-  @override
-  BaseAgent createAgent() => ResourceAgent(this);
-}
+import 'package:mas_lab/agents/base/agent.dart';
+import 'package:mas_lab/agents/resource/messages.dart';
+import 'package:mas_lab/agents/resource/settings.dart';
+import 'package:mas_lab/agents/task/messages.dart';
+import 'package:mas_lab/messages.dart';
+import 'package:mas_lab/shared.dart';
 
 final class ResourceAgent extends BaseAgent {
   late final double performance;
@@ -53,7 +44,7 @@ final class ResourceAgent extends BaseAgent {
       case AcceptOfferMessage task:
         var insertingTask = backlog[task.port];
         if (insertingTask == null || insertingTask.scheduleIndex > schedule.length) {
-          task.port.send(OfferAcceptAbortedMessage(port: port, name: name));
+          task.port.send(OfferIrrelevantMessage(port: port, name: name));
           break;
         }
         backlog.remove(insertingTask.info.port);
@@ -64,14 +55,14 @@ final class ResourceAgent extends BaseAgent {
         print('Resource [ $name ] accepted task [ ${insertingTask.info.name} ]. New schedule:\n$v\n');
         backlog.removeWhere((_, task) => task.scheduleIndex > insertingTask.scheduleIndex);
         for (var i = insertingTask.scheduleIndex + 1; i < schedule.length; i++) {
-          schedule[i].port.send(OfferChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
+          schedule[i].port.send(ScheduleChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
         }
 
-      case RejectOfferMessage task:
+      case RevokeAgreementMessage task:
         schedule.removeWhere((t) => t.port == task.port);
         var render = _renderSchedule();
         for (var task in render) {
-          task.info.port.send(OfferChangedMessage(doneSeconds: task.secondsTotal, port: port, name: name));
+          task.info.port.send(ScheduleChangedMessage(doneSeconds: task.secondsTotal, port: port, name: name));
         }
 
       case TaskDiedMessage task:
@@ -80,7 +71,7 @@ final class ResourceAgent extends BaseAgent {
           schedule.removeAt(index);
           var render = _renderSchedule();
           for (var i = index; i < schedule.length; i++) {
-            schedule[i].port.send(OfferChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
+            schedule[i].port.send(ScheduleChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
           }
           backlog.removeWhere((k, v) => v.scheduleIndex > index);
           rootPort.send(BroadcastMessage(ResourceUpdatedMessage(name: name, port: port), AgentType.task));

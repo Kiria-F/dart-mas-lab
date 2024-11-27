@@ -1,4 +1,4 @@
-import 'package:mas_labs/base/base_message.dart';
+import 'package:mas_lab/agents/base/messages.dart';
 
 class ResourceUpdatedMessage extends BaseMessage {
   ResourceUpdatedMessage({required super.name, required super.port});
@@ -10,14 +10,14 @@ class OfferMessage extends BaseMessage {
   OfferMessage({required this.doneSeconds, required super.port, required super.name});
 }
 
-class OfferAcceptAbortedMessage extends BaseMessage {
-  OfferAcceptAbortedMessage({required super.port, required super.name});
+class OfferIrrelevantMessage extends BaseMessage {
+  OfferIrrelevantMessage({required super.port, required super.name});
 }
 
-class OfferChangedMessage extends BaseMessage {
+class ScheduleChangedMessage extends BaseMessage {
   final int doneSeconds;
 
-  OfferChangedMessage({required this.doneSeconds, required super.port, required super.name});
+  ScheduleChangedMessage({required this.doneSeconds, required super.port, required super.name});
 }
 
 class ResourceDiedMessage extends DeadMessage {

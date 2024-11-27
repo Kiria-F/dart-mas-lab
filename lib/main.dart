@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:mas_labs/agents/resource/agent.dart';
-import 'package:mas_labs/agents/resource/messages.dart';
-import 'package:mas_labs/agents/task/agent.dart';
-import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/base/base_message.dart';
-import 'package:mas_labs/messages.dart';
-import 'package:mas_labs/shared.dart';
+import 'package:mas_lab/agents/base/messages.dart';
+import 'package:mas_lab/agents/resource/messages.dart';
+import 'package:mas_lab/agents/resource/settings.dart';
+import 'package:mas_lab/agents/task/messages.dart';
+import 'package:mas_lab/agents/task/settings.dart';
+import 'package:mas_lab/messages.dart';
+import 'package:mas_lab/shared.dart';
 
 import 'setup.dart';
 

@@ -1,19 +1,10 @@
-import 'package:mas_labs/agents/resource/messages.dart';
-import 'package:mas_labs/agents/task/messages.dart';
-import 'package:mas_labs/base/base_agent.dart';
-import 'package:mas_labs/base/base_message.dart';
-import 'package:mas_labs/base/base_settings.dart';
-import 'package:mas_labs/messages.dart';
-import 'package:mas_labs/shared.dart';
-
-class TaskSettings extends BaseSettings {
-  final TaskInfoCore info;
-
-  TaskSettings({required super.rootPort, required super.name, required this.info});
-
-  @override
-  BaseAgent createAgent() => TaskAgent(this);
-}
+import 'package:mas_lab/agents/base/agent.dart';
+import 'package:mas_lab/agents/base/messages.dart';
+import 'package:mas_lab/agents/resource/messages.dart';
+import 'package:mas_lab/agents/task/messages.dart';
+import 'package:mas_lab/agents/task/settings.dart';
+import 'package:mas_lab/messages.dart';
+import 'package:mas_lab/shared.dart';
 
 class TaskAgent extends BaseAgent {
   final TaskInfoCore info;
@@ -45,13 +36,13 @@ class TaskAgent extends BaseAgent {
         if (_offersCollected()) {
           var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
           if (bestOffer.key != activeOffer) {
-            activeOffer?.port.send(RejectOfferMessage(port: port, name: name));
+            activeOffer?.port.send(RevokeAgreementMessage(port: port, name: name));
           }
           bestOffer.key.port.send(AcceptOfferMessage(port: port, name: name));
           activeOffer = bestOffer.key;
         }
 
-      case OfferAcceptAbortedMessage offer:
+      case OfferIrrelevantMessage offer:
         resources[offer] = null;
         offer.port.send(RequestOfferMessage(info: info, port: port, name: name));
 
@@ -62,7 +53,7 @@ class TaskAgent extends BaseAgent {
         }
         print('Task [ $name ] got to know about [ ${message.name} ] death\n');
         reviewOffers();
-      case OfferChangedMessage offer:
+      case ScheduleChangedMessage offer:
         resources[offer] = offer.doneSeconds;
         reviewOffers();
 
@@ -80,7 +71,7 @@ class TaskAgent extends BaseAgent {
     if (!_offersCollected()) return;
     var bestOffer = resources.entries.reduce((a, b) => a.value! < b.value! ? a : b);
     if (bestOffer.key != activeOffer) {
-      activeOffer?.port.send(RejectOfferMessage(port: port, name: name));
+      activeOffer?.port.send(RevokeAgreementMessage(port: port, name: name));
       activeOffer = bestOffer.key;
       activeOffer!.port.send(AcceptOfferMessage(port: port, name: name));
     }

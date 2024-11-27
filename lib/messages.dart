@@ -1,5 +1,5 @@
-import 'package:mas_labs/base/base_message.dart';
-import 'package:mas_labs/shared.dart';
+import 'package:mas_lab/agents/base/messages.dart';
+import 'package:mas_lab/shared.dart';
 
 class InitTaskMessage {
   final Iterable<AgentInfo> resources;

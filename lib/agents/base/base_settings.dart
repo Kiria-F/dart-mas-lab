@@ -1,6 +1,6 @@
 import 'dart:isolate';
 
-import 'package:mas_labs/base/base_agent.dart';
+import 'package:mas_lab/agents/base/agent.dart';
 
 typedef AgentInitializationMessage = ({BaseSettings settings, SendPort sendPort});
 
