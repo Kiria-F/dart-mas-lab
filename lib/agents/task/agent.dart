@@ -53,6 +53,7 @@ class TaskAgent extends BaseAgent {
         }
         print('Task [ $name ] got to know about [ ${message.name} ] death\n');
         reviewOffers();
+
       case ScheduleChangedMessage offer:
         resources[offer] = offer.doneSeconds;
         reviewOffers();

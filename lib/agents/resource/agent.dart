@@ -36,8 +36,7 @@ final class ResourceAgent extends BaseAgent {
             bestRender = render;
           }
         }
-        var v = _visualizeSchedule(bestRender);
-        print('Resource [ $name ] got request for task [ ${message.name} ]. Offer sent:\n$v\n');
+        print('Resource [ $name ] got request for task [ ${message.name} ]. Offer sent:\n${_visualizeSchedule(bestRender)}\n');
         backlog[message.port] = BacklogTask.fromTaskInfo(task, bestValueIndex);
         message.port.send(OfferMessage(port: port, name: name, doneSeconds: bestSeconds));
 
@@ -51,8 +50,7 @@ final class ResourceAgent extends BaseAgent {
         schedule.remove(insertingTask.info);
         schedule.insert(insertingTask.scheduleIndex, insertingTask.info);
         var render = _renderSchedule();
-        var v = _visualizeSchedule(render);
-        print('Resource [ $name ] accepted task [ ${insertingTask.info.name} ]. New schedule:\n$v\n');
+        print('Task [ ${task.name} ] accepted offer from Resource [ $name ]. Its new schedule:\n${_visualizeSchedule(render)}\n');
         backlog.removeWhere((_, task) => task.scheduleIndex > insertingTask.scheduleIndex);
         for (var i = insertingTask.scheduleIndex + 1; i < schedule.length; i++) {
           schedule[i].port.send(ScheduleChangedMessage(doneSeconds: render[i].secondsTotal, port: port, name: name));
@@ -61,6 +59,7 @@ final class ResourceAgent extends BaseAgent {
       case RevokeAgreementMessage task:
         schedule.removeWhere((t) => t.port == task.port);
         var render = _renderSchedule();
+        print('Task [ ${task.name} ] revoked agreement with Resource [ $name ]. Its new schedule:\n${_visualizeSchedule(render)}\n');
         for (var task in render) {
           task.info.port.send(ScheduleChangedMessage(doneSeconds: task.secondsTotal, port: port, name: name));
         }
@@ -78,8 +77,7 @@ final class ResourceAgent extends BaseAgent {
         }
 
       case ViewSchedule _:
-        var v = _visualizeSchedule(_renderSchedule());
-        print('Resource\'s [ $name ] schedule:\n$v\n');
+        print('Resource\'s [ $name ] schedule:\n${_visualizeSchedule(_renderSchedule())}\n');
 
       case DieMessage _:
         print('Resource [ $name ] died\n');
