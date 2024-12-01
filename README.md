@@ -148,7 +148,9 @@ sequenceDiagram
 3. Установить пакеты проекта  
     - VS Code должна сама предложить установить необходимые пакеты
     - Если нет, то вручную, командой `$ dart pub install`
-4. F5
+4. Установить терминал (можно внешний) в качестве консольного интерфеса дарта. Это необходимо для ввода команд в консоль, т.к. консоль отладки по умолчанию его не поддерживает.
+![Dart cli console setup instruction](https://raw.githubusercontent.com/Kiria-F/dart-mas-lab-assets/refs/heads/main/dart-cli-console-instruction.png)
+5. F5
 
 ### Из консоли (не рекомендуется)
 
